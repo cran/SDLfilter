@@ -3,13 +3,15 @@
 #' @description A partial component of dupfilter, although works as a stand-alone function. 
 #' This function removes temporal duplicates.
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
-#' This filter is independently applied to a subset of data grouped by the unique "id". "DateTime" is date & time in class POSIXct. 
+#' This filter is independently applied to a subset of data grouped by the unique "id". "DateTime" is date & time in class \code{\link[base]{POSIXct}}. 
 #' "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 #' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 #' (e.g. number of GPS satellites used for estimation).
-#' @param step.time A numeric vector specifying temporal interval between two consecutive locations. Default is 0 hours. 
+#' @param step.time A numeric value specifying temporal interval between two consecutive locations. Default is 0 hours. 
 #' Locations are considered temporal duplicates if the temporal interval is less than or equal to the user specified value.
-#' @import sp raster geosphere
+#' @import sp
+#' @importFrom raster pointDistance
+#' @importFrom geosphere distGeo
 #' @export
 #' @details This function removes temporal duplicates according to the total distance from a previous and to a subsequent location. 
 #' A fix with a shorter sum distance is retained.
@@ -19,7 +21,7 @@
 #' @references Shimada T, Limpus C, Jones R, Hazel J, Groom R, Hamann M (2016) 
 #' Sea turtles return home after intentional displacement from coastal foraging areas. 
 #' Marine Biology 163:1-14 doi:10.1007/s00227-015-2771-0
-#' @seealso dupfilter, dupfilter.exact, dupfilter.qi, dupfilter.space
+#' @seealso \code{\link{dupfilter}}, \code{\link{dupfilter.exact}}, \code{\link{dupfilter.qi}}, \code{\link{dupfilter.space}}
 
 
 
@@ -59,19 +61,11 @@ dupfilter.time<-function (sdata, step.time=0) {
         sdata$sTime<-sTime
         
         
-        #### Exclude data set with insufficient number of locations
-        # maxInterval<-lapply(IDs, function(j) max(sdata[sdata$id %in% j, "pTime"], na.rm=T))
-        # id.exclude<-IDs[which(maxInterval==0)]
-        # excluded.data<-subset(sdata, id %in% id.exclude)
-        # row.names(sdata)<-1:nrow(sdata)
-        # IDs<-levels(factor(sdata$id))
-        
-        
         #### Select a location from multiple fixes obtained at the same time
         ### Get turtle location as "SpatialPoints"
         LatLong<-data.frame(Y=sdata$lat, X=sdata$lon)
-        coordinates(LatLong)<-~X+Y
-        proj4string(LatLong)<-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+        sp::coordinates(LatLong)<-~X+Y
+        sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
         
         
         ### Sum distance from a previous and to a subsequent location (km.psl)
@@ -85,7 +79,7 @@ dupfilter.time<-function (sdata, step.time=0) {
             timeDiff<-difftime(sdataSub$DateTime, sdata$DateTime[i], units="hours")
             nextLoc<-min(which(timeDiff %in% min(timeDiff[timeDiff>step.time])))+AdjRow
             lastLoc<-max(which(timeDiff %in% max(timeDiff[timeDiff<(-step.time)])))+AdjRow
-            pointDistance(LatLong[i], LatLong[nextLoc], lonlat=T)/1000+pointDistance(LatLong[i], LatLong[lastLoc], lonlat=T)/1000
+            raster::pointDistance(LatLong[i], LatLong[nextLoc], lonlat=T)/1000 + raster::pointDistance(LatLong[i], LatLong[lastLoc], lonlat=T)/1000
           } else {
             NA
           }
@@ -119,7 +113,7 @@ dupfilter.time<-function (sdata, step.time=0) {
             timeDiff<-difftime(sdataSub$DateTime, sdata$DateTime[i], units="hours")
             nextLoc<-min(which(timeDiff %in% min(timeDiff[timeDiff>step.time])))+ AdjRow
             lastLoc<-max(which(timeDiff %in% max(timeDiff[timeDiff<(-step.time)])))+ AdjRow
-            pointDistance(LatLong[i], LatLong[lastLoc], lonlat=T)/1000+pointDistance(LatLong[i], LatLong[nextLoc], lonlat=T)/1000
+            raster::pointDistance(LatLong[i], LatLong[lastLoc], lonlat=T)/1000 + raster::pointDistance(LatLong[i], LatLong[nextLoc], lonlat=T)/1000
           } else {
             NA
           }
@@ -176,15 +170,15 @@ dupfilter.time<-function (sdata, step.time=0) {
                 }
               }
               bestNextLocIn<-as.numeric(rownames(bestNextLoc))
-              pointDistance(LatLong[i], LatLong[bestNextLocIn], lonlat=T)/1000
+              raster::pointDistance(LatLong[i], LatLong[bestNextLocIn], lonlat=T)/1000
             } else if(is.na(min(nextLocs$PSL1)) && is.na(min(nextLocs$PSL2))) {
               FirstnextLocIn<-min(as.numeric(rownames(nextLocs)))
               LastnextLocIn<-max(as.numeric(rownames(nextLocs)))
-              Distances<-distGeo(LatLong[i], LatLong[FirstnextLocIn:LastnextLocIn], a=6378137, f=1/298.257223563)/1000
+              Distances<-geosphere::distGeo(LatLong[i], LatLong[FirstnextLocIn:LastnextLocIn], a=6378137, f=1/298.257223563)/1000
               min(Distances)
             } else {
               bestNextLocIn<-as.numeric(rownames(nextLocs))
-              pointDistance(LatLong[i], LatLong[bestNextLocIn], lonlat=T)/1000
+              raster::pointDistance(LatLong[i], LatLong[bestNextLocIn], lonlat=T)/1000
             }
           } else {
             NA
@@ -235,15 +229,15 @@ dupfilter.time<-function (sdata, step.time=0) {
                 }
               }
                 bestLastLocIn<-as.numeric(rownames(bestLastLoc))
-                pointDistance(LatLong[i], LatLong[bestLastLocIn], lonlat=T)/1000
+                raster::pointDistance(LatLong[i], LatLong[bestLastLocIn], lonlat=T)/1000
              } else if(is.na(min(lastLocs$PSL1)) && is.na(min(lastLocs$PSL2))) {
                 FirstLastLocIn<-min(as.numeric(rownames(lastLocs)))
                 LastLastLocIn<-max(as.numeric(rownames(lastLocs)))
-                Distances<-distGeo(LatLong[i], LatLong[FirstLastLocIn:LastLastLocIn], a=6378137, f=1/298.257223563)/1000
+                Distances<-geosphere::distGeo(LatLong[i], LatLong[FirstLastLocIn:LastLastLocIn], a=6378137, f=1/298.257223563)/1000
                 min(Distances)
              } else {
                 bestLastLocIn<-as.numeric(rownames(lastLocs))
-                pointDistance(LatLong[i], LatLong[bestLastLocIn], lonlat=T)/1000
+                raster::pointDistance(LatLong[i], LatLong[bestLastLocIn], lonlat=T)/1000
              }
             } else {
               NA
@@ -257,7 +251,7 @@ dupfilter.time<-function (sdata, step.time=0) {
           ini<-max(as.numeric(rownames(sdata[sdata$id %in% j & sdata$sTime>step.time,][-lastRow,])))+1
           las<-max(as.numeric(rownames(sdata[sdata$id %in% j,])))
           km.psl4<-unlist(lapply(ini:las, kmPSL4))
-          c(rep(NA,nrow(sdata[sdata$id %in% j,])-(las-ini+1)), km.psl4)
+          c(rep(NA, nrow(sdata[sdata$id %in% j,])-(las-ini+1)), km.psl4)
         }
         
         km.psl4<-unlist(lapply(IDs, applyPSL4))

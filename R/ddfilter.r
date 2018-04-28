@@ -3,19 +3,19 @@
 #' @description Function to remove locations by a data driven filter as described in Shimada et al. (2012)
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
 #' This filter is independently applied to a subset of data grouped by the unique "id". 
-#' "DateTime" is date & time in class POSIXct. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
+#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 #' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 #' (e.g. number of GPS satellites used for estimation).
 #' @param vmax A numeric vector specifying threshold speed both from a previous and to a subsequent fix. 
 #' Default is 8.9km/h. If this value is unknown, the function "est.vmax" can be used to estimate the value based on the supplied data.
-#' @param maxvlp A numeric vector specifying threshold speed during a loop trip. Default is 1.8 km/h. 
+#' @param maxvlp A numeric value specifying threshold speed during a loop trip. Default is 1.8 km/h. 
 #' If this value is unknown, the function "est.maxvlp" can be used to estimate the value based on the supplied data.
 #' @param qi An integer specifying threshold quality index during a loop trip. Default is 4.
 #' @param ia An integer specifying threshold inner angle during a loop trip. Default is 90 degrees.
 #' @param method An integer specifying how locations are filtered by speed. 
 #' 1 = a location is removed if the speed EITHER from a previous and to a subsequent location exceeds a given threshold speed. 
 #' 2 = a location is removed if the speed BOTH from a previous and to a subsequent location exceeds a given threshold speed. Default is 2.
-#' @import sp raster trip
+#' @importFrom gridExtra marrangeGrob
 #' @export
 #' @details Locations are removed if the speed both from a previous and to a subsequent location exceeds a given "vmax", 
 #' or if all of the following criteria apply: the associated quality index is less than or equal to a given "qi", 
@@ -32,84 +32,50 @@
 #' @references Shimada T, Jones R, Limpus C, Hamann M (2012) 
 #' Improving data retention and home range estimates by data-driven screening. 
 #' Marine Ecology Progress Series 457:171-180 doi:10.3354/meps09747
-#' @seealso ddfilter.speed, ddfilter.loop, "est.vmax", "est.maxvlp"
+#' @seealso \code{\link{ddfilter.speed}}, \code{\link{ddfilter.loop}}, \code{\link{est.vmax}}, \code{\link{est.maxvlp}}
 #' @examples
-#' ### Load data sets
-#' # Fastloc GPS data obtained from a green turtle
+#' #### Load data sets
+#' ## Fastloc GPS data obtained from a green turtle
 #' data(turtle)
 #' 
-#' # A Map for the example site
-#' data(basemap)
+#' ## A Map for the example site
+#' data(Australia)
+#' data(SandyStrait)
 #' 
 #' 
-#' ### Filter temporal and/or spatial duplicates
+#' #### Filter temporal and/or spatial duplicates
 #' turtle.dup <- dupfilter(turtle, step.time=5/60, step.dist=0.001)
 #'  
 #' 
-#' ### ddfilter
-#' ## Estimate vmax
-#' vmax <- est.vmax(turtle.dup)
+#' #### ddfilter
+#' ## Using the built-in function to estimate the threshold speeds
+#' V <- est.vmax(turtle.dup)
+#' VLP <- est.maxvlp(turtle.dup)
+#' turtle.dd <- ddfilter(turtle.dup, vmax=V, maxvlp=VLP)
 #' 
-#' ## Estimate maxvlp
-#' maxvlp <- est.maxvlp(turtle.dup)
-#' 
-#' ## Apply ddfilter
-#' turtle.dd <- ddfilter(turtle.dup, vmax=vmax, maxvlp=maxvlp)
-#' # turtle.dd <- ddfilter(turtle.dup, vmax=9.9, qi=4, ia=90, maxvlp=2.0)
+#' ## Or using user specified threshold speeds
+#' turtle.dd <- ddfilter(turtle.dup, vmax=9.9, qi=4, ia=90, maxvlp=2.0)
 #' 
 #' 
-#' ### Plot data on a map before and after ddfilter is applied
-#' par(mfrow=c(1,2))
-#' 
-#' # Entire area
-#' par(mar=c(4,5,2,1))
-#' LatLong <- data.frame(Y=turtle.dup$lat, X=turtle.dup$lon)
-#' coordinates(LatLong) <- ~X+Y
-#' proj4string(LatLong) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-#' plot(LatLong, pch=21, bg="yellow", xlim=c(147.8, 156.2))
-#' axis(1)
-#' axis(2, las=2)
-#' box()
-#' mtext("Longitude", side=1, line=2.5)
-#' mtext("Latitude", side=2, line=3.5)
-#' title("Unfiltered")
-#' 
-#' par(mar=c(4,4,2,2))
-#' LatLong <- data.frame(Y=turtle.dd$lat, X=turtle.dd$lon)
-#' coordinates(LatLong) <- ~X+Y
-#' proj4string(LatLong) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-#' plot(LatLong, pch=21, bg="yellow", xlim=c(147.8, 156.2))
-#' axis(1)
-#' axis(2, las=2)
-#' box()
-#' mtext("Longitude", side=1, line=2.5)
-#' title("Filtered")
-#' 
-#' # Zoomed in
-#' par(mar=c(4,5,2,1))
-#' plot(basemap, col="grey", xlim=c(152.8, 153.1), ylim=c(-25.75, -25.24))
-#' axis(1, at=seq(from=152, to=154, by=0.2))
-#' axis(2, at=seq(from=-26, to=-25, by=0.2), las=2)
-#' mtext("Longitude", side=1, line=2.5)
-#' mtext("Latitude", side=2, line=3.5)
-#' box()
-#' title("Unfiltered")
-#' LatLong <- data.frame(Y=turtle.dup$lat, X=turtle.dup$lon)
-#' coordinates(LatLong) <- ~X+Y
-#' proj4string(LatLong) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-#' plot(LatLong, pch=21, bg="yellow", add=TRUE) 
-#' 
-#' par(mar=c(4,4,2,2))
-#' plot(basemap, col="grey", xlim=c(152.8, 153.1), ylim=c(-25.75, -25.24))
-#' axis(1, at=seq(from=152, to=154, by=0.2))
-#' axis(2, at=seq(from=-26, to=-25, by=0.2), las=2)
-#' mtext("Longitude", side=1, line=2.5)
-#' box()
-#' title("Filtered")
-#' LatLong <- data.frame(Y=turtle.dd$lat, X=turtle.dd$lon)
-#' coordinates(LatLong) <- ~X+Y
-#' proj4string(LatLong) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-#' plot(LatLong, pch=21, bg="yellow", add=TRUE) 
+#' #### Plot data removed or retained by ddfilter
+#' ## Entire area
+#' p1<-plotMap(turtle.dup, bgmap=Australia, point.size = 2, line.size = 0.5, axes.lab.size = 0, 
+#'              sb.distance=200, multiplot = FALSE, title.size=15, title="Entire area")[[1]] + 
+#'   geom_point(aes(x=lon, y=lat), data=turtle.dd, size=2, fill="yellow", shape=21)+
+#'   geom_point(aes(x=x, y=y), data=data.frame(x=c(154, 154), y=c(-22, -22.5)), 
+#'              size=3, fill=c("yellow", "red"), shape=21) + 
+#'   annotate("text", x=c(154.3, 154.3), y=c(-22, -22.5), label=c("Retained", "Removed"), 
+#'            colour="black", size=4, hjust = 0)
+#'
+#' ## Zoomed in
+#' p2<-plotMap(turtle.dup, bgmap=SandyStrait, xlim=c(152.7, 153.2), ylim=(c(-25.75, -25.24)), 
+#' axes.lab.size = 0, sb.distance=10, point.size = 2, line.size = 0.5, multiplot = FALSE, 
+#' title.size=15, title="Zoomed in")[[1]] + 
+#' geom_path(aes(x=lon, y=lat), data=turtle.dd, size=0.5, colour="black", linetype=1) + 
+#' geom_point(aes(x=lon, y=lat), data=turtle.dd, size=2, colour="black", shape=21, fill="yellow")
+#'
+#' gridExtra::marrangeGrob(list(p1, p2), nrow=1, ncol=2)
+
 
 
 ddfilter<-function(sdata, vmax=8.9, maxvlp=1.8, qi=4, ia=90, method=2) {
@@ -129,16 +95,11 @@ ddfilter<-function(sdata, vmax=8.9, maxvlp=1.8, qi=4, ia=90, method=2) {
   RemovedSamplesP<-round((1-(FilteredSS/OriginalSS))*100,2)
   
   cat("\n")
-  #maxchar<-sum(nchar(c("A total of ", RemovedSamplesN, " locations (", RemovedSamplesP, "%) were removed by ddfilter")))
-  #cat(rep("#", maxchar), sep="")
-  #cat("\n")
   cat("Input data:", OriginalSS, "locations")
   cat("\n")
   cat("Filtered data:", FilteredSS, "locations")
   cat("\n")
   cat("ddfilter removed ", RemovedSamplesN, " locations (", RemovedSamplesP, "% of original data)", sep="")
-  #cat("\n")
-  #cat(rep("#", maxchar), sep="")
   cat("\n\n")
   
   #### Return the filtered data set

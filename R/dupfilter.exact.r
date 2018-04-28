@@ -4,10 +4,11 @@
 #' This function removes temporally and spatially exact duplicates. 
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
 #' This filter is independently applied to a subset of data grouped by the unique "id". 
-#' "DateTime" is date & time in class POSIXct. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
+#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 #' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 #' (e.g. number of GPS satellites used for estimation).
-#' @import sp raster
+#' @import sp
+#' @importFrom raster pointDistance
 #' @export
 #' @details This function selects a fix from multiple fixes, which were simultaneously obtained at the same geographical coordinate.
 #' @return Input data frame is returned with temporally and spatially exact duplicates removed. 
@@ -18,7 +19,7 @@
 #' @references Shimada T, Limpus C, Jones R, Hazel J, Groom R, Hamann M (2016) 
 #' Sea turtles return home after intentional displacement from coastal foraging areas. 
 #' Marine Biology 163:1-14 doi:10.1007/s00227-015-2771-0
-#' @seealso dupfilter, dupfilter.qi, dupfilter.time, dupfilter.space
+#' @seealso \code{\link{dupfilter}}, \code{\link{dupfilter.qi}}, \code{\link{dupfilter.time}}, \code{\link{dupfilter.space}}
 
 
   
@@ -64,11 +65,11 @@ dupfilter.exact<-function (sdata){
       calcDist<-function(j){
         turtle<-sdata[sdata$id %in% j,]  
         LatLong<-data.frame(Y=turtle$lat, X=turtle$lon)
-        coordinates(LatLong)<-~X+Y
-        proj4string(LatLong)<-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+        sp::coordinates(LatLong)<-~X+Y
+        sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
         
         #pDist
-        c(NA,pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
+        c(NA, raster::pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
       }
       
       sdata$pDist<-unlist(lapply(IDs, calcDist))

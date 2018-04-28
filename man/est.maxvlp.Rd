@@ -2,20 +2,20 @@
 % Please edit documentation in R/estMaxVlp.R
 \name{est.maxvlp}
 \alias{est.maxvlp}
-\title{Estimate maximum one-way linear speed of a loop trip (Max.Vlp)}
+\title{Estimate maximum one-way linear speed of a loop trip}
 \usage{
 est.maxvlp(sdata, qi = 4, prob = 0.99)
 }
 \arguments{
 \item{sdata}{A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
 This filter is independently applied to a subset of data grouped by the unique "id". 
-"DateTime" is date & time in class POSIXct. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
+"DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 (e.g. number of GPS satellites used for estimation).}
 
 \item{qi}{An integer specifying the minimum quality index associated with a location used for the estimation. Default is 4.}
 
-\item{prob}{A numeric vector specifying a probability to obtain sample quantiles. Default is 0.99.}
+\item{prob}{A numeric value specifying a probability to obtain sample quantiles. Default is 0.99.}
 }
 \value{
 A vector is returned. The unit is in kilometres per hour.
@@ -42,7 +42,7 @@ Improving data retention and home range estimates by data-driven screening.
 Marine Ecology Progress Series 457:171-180 doi:10.3354/meps09747
 }
 \seealso{
-ddfilter, ddfilter.loop
+\code{\link{ddfilter}}, \code{\link{ddfilter.loop}}
 }
 \author{
 Takahiro Shimada

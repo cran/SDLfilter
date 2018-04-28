@@ -2,17 +2,18 @@
 #' @title Filter spatial duplicates
 #' @description A partial component of dupfilter although works as a stand-alone function. This function removes spatial duplicates.
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
-#' This filter is independently applied to a subset of data grouped by the unique "id". "DateTime" is date & time in class POSIXct. 
+#' This filter is independently applied to a subset of data grouped by the unique "id". "DateTime" is date & time in class \code{\link[base]{POSIXct}}. 
 #' "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 #' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 #' (e.g. number of GPS satellites used for estimation).
-#' @param step.time A numeric vector specifying temporal interval between two consecutive locations. Default is 0 hours. 
+#' @param step.time A numeric value specifying temporal interval between two consecutive locations. Default is 0 hours. 
 #' Locations are considered temporal duplicates if the temporal interval is less than or equal to the user specified value.
-#' @param step.dist A numeric vector specifying spatial interval between two consecutive locations. Default is 0 kilometres. 
+#' @param step.dist A numeric value specifying spatial interval between two consecutive locations. Default is 0 kilometres. 
 #' Locations are considered spatial duplicates if the spatial interval is less than or equal to the user specified value.
 #' @param conditional If TRUE, spatial duplicates are removed only if the temporal interval between the locations is 
 #' less than the time specified in "step.time". Default is FALSE.
-#' @import sp raster
+#' @import sp
+#' @importFrom raster pointDistance
 #' @export
 #' @details This function selects a fix from multiple fixes which were obtained at the same geographical coordinate. 
 #' A minimum of two locations per id is required to run this function.
@@ -23,7 +24,7 @@
 #' @references Shimada T, Limpus C, Jones R, Hazel J, Groom R, Hamann M (2016) 
 #' Sea turtles return home after intentional displacement from coastal foraging areas. 
 #' Marine Biology 163:1-14 doi:10.1007/s00227-015-2771-0
-#' @seealso dupfilter, dupfilter.exact, dupfilter.time, dupfilter.qi
+#' @seealso \code{\link{dupfilter}}, \code{\link{dupfilter.exact}}, \code{\link{dupfilter.time}}, \code{\link{dupfilter.qi}}
 
 
 dupfilter.space<-function (sdata, step.time=0, step.dist=0, conditional=FALSE){
@@ -67,11 +68,11 @@ dupfilter.space<-function (sdata, step.time=0, step.dist=0, conditional=FALSE){
     calcDist<-function(j){
       turtle<-sdata[sdata$id %in% j,]  
       LatLong<-data.frame(Y=turtle$lat, X=turtle$lon)
-      coordinates(LatLong)<-~X+Y
-      proj4string(LatLong)<-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+      sp::coordinates(LatLong)<-~X+Y
+      sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
       
       #pDist
-      c(NA,pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
+      c(NA, raster::pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
     }
     
     sdata$pDist<-unlist(lapply(IDs, calcDist))

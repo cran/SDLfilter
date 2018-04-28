@@ -1,0 +1,8 @@
+Version 1.1.0 (2018-04-27)
+
+  o added a new function (plot.map) to plot locations.
+  o updated vignette.
+
+Version 1.0.0 (2018-02-08)
+
+  o First official release.

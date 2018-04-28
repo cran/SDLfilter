@@ -4,14 +4,15 @@
 #' This function removes locations by speed, inner angle, and quality index as described in Shimada et al. (2012).
 #' @param sdata A data frame containing columns with the following headers: 
 #' "id", "DateTime", "lat", "lon", "qi". This filter is independently applied to a subset of data grouped by the unique "id". 
-#' "DateTime" is date & time in class POSIXct. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
+#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 #' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 #' (e.g. number of GPS satellites used for estimation).
 #' @param qi An integer specifying threshold quality index during a loop trip. Default is 4 satellites.
 #' @param ia An integer specifying threshold inner angle during a loop trip. Default is 90 degrees.
-#' @param maxvlp A numeric vector specifying threshold speed during a loop trip. Default is 1.8 km/h. 
+#' @param maxvlp A numeric value specifying threshold speed during a loop trip. Default is 1.8 km/h. 
 #' If this value is unknown, the function "est.maxvlp" can be used to estimate the value based on the supplied data.
-#' @import sp raster trip
+#' @import sp trip
+#' @importFrom raster pointDistance
 #' @export
 #' @details This function removes locations if all of the following criteria apply: 
 #' the number of source satellites are less than or equal to "qi", 
@@ -26,7 +27,7 @@
 #' @author Takahiro Shimada
 #' @references Shimada T, Jones R, Limpus C, Hamann M (2012) Improving data retention and home range estimates by data-driven screening. 
 #' Marine Ecology Progress Series 457:171-180 doi:10.3354/meps09747
-#' @seealso ddfilter, ddfilter.speed, est.maxvlp
+#' @seealso \code{\link{ddfilter}}, \code{\link{ddfilter.speed}}, \code{\link{est.maxvlp}}
 
 
 
@@ -76,11 +77,11 @@ ddfilter.loop<-function(sdata, qi=4, ia=90, maxvlp=1.8){
             calcDist<-function(j){
                 turtle<-sdata[sdata$id %in% j,]  
                 LatLong<-data.frame(Y=turtle$lat, X=turtle$lon)
-                coordinates(LatLong)<-~X+Y
-                proj4string(LatLong)<-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+                sp::coordinates(LatLong)<-~X+Y
+                sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
                 
                 #pDist
-                c(NA,pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
+                c(NA, raster::pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
             }
             
             sdata$pDist<-unlist(lapply(IDs, calcDist))
@@ -94,10 +95,10 @@ ddfilter.loop<-function(sdata, qi=4, ia=90, maxvlp=1.8){
             
             ## Calculate inner angle in degree
             LatLong<-data.frame(Y=sdata$lat, X=sdata$lon, tms=sdata$DateTime, id=sdata$id)
-            coordinates(LatLong)<-~X+Y
-            proj4string(LatLong)<-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-            tr<-trip(LatLong, c("tms", "id"))
-            sdata$inAng<-trackAngle(tr)
+            sp::coordinates(LatLong)<-~X+Y
+            sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+            tr<-trip::trip(LatLong, c("tms", "id"))
+            sdata$inAng<-trip::trackAngle(tr)
             
             
             ### Remove location according to qi, inner angle and max LP speed

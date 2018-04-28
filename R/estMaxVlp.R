@@ -1,14 +1,16 @@
 #' @aliases est.maxvlp
-#' @title Estimate maximum one-way linear speed of a loop trip (Max.Vlp)
+#' @title Estimate maximum one-way linear speed of a loop trip
 #' @description This function estimates the maximum one-way linear speed of a loop trip as described in Shimada et al. (2012).
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
 #' This filter is independently applied to a subset of data grouped by the unique "id". 
-#' "DateTime" is date & time in class POSIXct. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
+#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 #' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 #' (e.g. number of GPS satellites used for estimation).
 #' @param qi An integer specifying the minimum quality index associated with a location used for the estimation. Default is 4.
-#' @param prob A numeric vector specifying a probability to obtain sample quantiles. Default is 0.99.
-#' @import sp raster
+#' @param prob A numeric value specifying a probability to obtain sample quantiles. Default is 0.99.
+#' @import sp
+#' @importFrom raster pointDistance
+#' @importFrom stats quantile
 #' @export
 #' @details The function first detects a "loop trip". 
 #' Loop trip behaviour is represented by spatial departure and return with more than 3 consecutive locations (Shimada et al 2012). 
@@ -24,7 +26,7 @@
 #' @references Shimada T, Jones R, Limpus C, Hamann M (2012) 
 #' Improving data retention and home range estimates by data-driven screening. 
 #' Marine Ecology Progress Series 457:171-180 doi:10.3354/meps09747
-#' @seealso ddfilter, ddfilter.loop
+#' @seealso \code{\link{ddfilter}}, \code{\link{ddfilter.loop}}
 
 
 est.maxvlp<-function(sdata, qi=4, prob=0.99){
@@ -58,11 +60,11 @@ est.maxvlp<-function(sdata, qi=4, prob=0.99){
   calcDist<-function(j){
       turtle<-sdata[sdata$id %in% j,]  
       LatLong<-data.frame(Y=turtle$lat, X=turtle$lon)
-      coordinates(LatLong)<-~X+Y
-      proj4string(LatLong)<-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+      sp::coordinates(LatLong)<-~X+Y
+      sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
       
       #pDist
-      c(NA,pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
+      c(NA, raster::pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
   }
   
   sdata$pDist<-unlist(lapply(IDs, calcDist))
@@ -76,10 +78,10 @@ est.maxvlp<-function(sdata, qi=4, prob=0.99){
   
   ## Calculate inner angle in degree
   LatLong<-data.frame(Y=sdata$lat, X=sdata$lon, tms=sdata$DateTime, id=sdata$id)
-  coordinates(LatLong)<-~X+Y
-  proj4string(LatLong)<-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-  tr<-trip(LatLong, c("tms", "id"))
-  sdata$inAng<-trackAngle(tr)
+  sp::coordinates(LatLong)<-~X+Y
+  sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+  tr<-trip::trip(LatLong, c("tms", "id"))
+  sdata$inAng<-trip::trackAngle(tr)
   
   
   #### Identify loop trips
@@ -233,7 +235,7 @@ est.maxvlp<-function(sdata, qi=4, prob=0.99){
   
   
   #### Maximum Vlp given # percentile considered outliers
-  MaxVlp<-quantile(Vlp, prob)
+  MaxVlp<-stats::quantile(Vlp, prob)
   
   
   #### Report the results

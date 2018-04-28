@@ -4,15 +4,16 @@
 #' This function removes locations by a given threshold speed as described in Shimada et al. (2012).
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
 #' This filter is independently applied to a subset of data grouped by the unique "id". 
-#' "DateTime" is date & time in class POSIXct. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
+#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 #' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 #' (e.g. number of GPS satellites used for estimation).
-#' @param vmax A numeric vector specifying threshold speed both from a previous and to a subsequent fix. Default is 8.9 km/h. 
+#' @param vmax A numeric value specifying threshold speed both from a previous and to a subsequent fix. Default is 8.9 km/h. 
 #' If this value is unknown, the function "est.vmax" can be used to estimate the value based on the supplied data.
 #' @param method An integer specifying how locations are filtered by speed. 
 #' 1 = a location is removed if the speed EITHER from a previous and to a subsequent location exceeds a given threshold speed. 
 #' 2 = a location is removed if the speed BOTH from a previous and to a subsequent location exceeds a given threshold speed. Default is FALSE.
-#' @import sp raster
+#' @import sp
+#' @importFrom raster pointDistance
 #' @export
 #' @details This function removes locations if the speed both/either from a previous and to a subsequent location exceeds a given threshold speed. 
 #' If "vmax" is unknown, it can be estimated using the function "est.vmax".
@@ -25,7 +26,7 @@
 #' @references Shimada T, Jones R, Limpus C, Hamann M (2012) 
 #' Improving data retention and home range estimates by data-driven screening.
 #' Marine Ecology Progress Series 457:171-180 doi:10.3354/meps09747
-#' @seealso ddfilter, ddfilter.loop, est.vmax
+#' @seealso \code{\link{ddfilter}}, \code{\link{ddfilter.loop}}, \code{\link{est.vmax}}
 
 
 
@@ -68,11 +69,11 @@ ddfilter.speed<-function (sdata, vmax=8.9, method=2){
       calcDist<-function(j){
           turtle<-sdata[sdata$id %in% j,]  
           LatLong<-data.frame(Y=turtle$lat, X=turtle$lon)
-          coordinates(LatLong)<-~X+Y
-          proj4string(LatLong)<-CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
+          sp::coordinates(LatLong)<-~X+Y
+          sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
           
           #pDist
-          c(NA,pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
+          c(NA, raster::pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
       }
       
       sdata$pDist<-unlist(lapply(IDs, calcDist))

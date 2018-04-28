@@ -8,15 +8,15 @@ dupfilter(sdata, step.time = 0, step.dist = 0, conditional = FALSE)
 }
 \arguments{
 \item{sdata}{A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
-This filter is independently applied to a subset of data grouped by the unique "id". "DateTime" is date & time in class POSIXct. 
+This filter is independently applied to a subset of data grouped by the unique "id". "DateTime" is date & time in class \code{\link[base]{POSIXct}}. 
 "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 (e.g. number of GPS satellites used for estimation).}
 
-\item{step.time}{A numeric vector specifying temporal interval between two consecutive locations. Default is 0 hours. 
+\item{step.time}{A numeric value specifying temporal interval between two consecutive locations. Default is 0 hours. 
 Locations are considered temporal duplicates if the temporal interval is less than or equal to the user specified value.}
 
-\item{step.dist}{A numeric vector specifying spatial interval between two consecutive locations. Default is 0 kilometres. 
+\item{step.dist}{A numeric value specifying spatial interval between two consecutive locations. Default is 0 kilometres. 
 Locations are considered spatial duplicates if the spatial interval is less than or equal to the user specified value.}
 
 \item{conditional}{If TRUE, spatial duplicates are removed only if temporal interval between the locations is 
@@ -36,12 +36,12 @@ A fix associated with a higher quality index is retained over other duplicated f
 If temporal duplicates are associated with same quality index, a fix located closest to a previous and a subsequent location is retained.
 }
 \examples{
-### Load data sets
-# Fastloc GPS data obtained from a green turtle
+#### Load data sets
+## Fastloc GPS data obtained from a green turtle
 data(turtle)
 
 
-### Apply dupfilter
+#### Apply dupfilter
 turtle.dup <- dupfilter(turtle)
 }
 \references{
@@ -50,7 +50,7 @@ Sea turtles return home after intentional displacement from coastal foraging are
 Marine Biology 163:1-14 doi:10.1007/s00227-015-2771-0
 }
 \seealso{
-dupfilter.exact, dupfilter.qi, dupfilter.time, dupfilter.space
+\code{\link{dupfilter.exact}}, \code{\link{dupfilter.qi}}, \code{\link{dupfilter.time}}, \code{\link{dupfilter.space}}
 }
 \author{
 Takahiro Shimada

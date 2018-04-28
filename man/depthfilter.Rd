@@ -10,14 +10,14 @@ depthfilter(sdata, bathymetry, extract = "bilinear", tide, qi = 4,
 \arguments{
 \item{sdata}{A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
 This filter is independently applied to a subset of data grouped by the unique "id". 
-"DateTime" is date & time in class POSIXct. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
+"DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
 "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
 (e.g. number of GPS satellites used for estimation).}
 
 \item{bathymetry}{object of class "RasterLayer" containing bathymetric data in meters. Geographic coordinate system is WGS84.}
 
-\item{extract}{Method to extract cell values from raster layer inherited from extract function of raster package. 
-Default is "bilinear". See the raster package for details.}
+\item{extract}{Method to extract cell values from raster layer inherited from extract function of the raster package. 
+Default is "bilinear". See \code{\link[raster]{extract}} for details.}
 
 \item{tide}{A data frame containing columns with the following headers: "tideDT", "reading", "standard.port". 
 "tideDT" is date & time in class POSIXct for each observed tidal height. "reading" is the observed tidal height in meters. 
@@ -55,78 +55,53 @@ This function removes fixes located at a given height from estimated high tide l
 The function chooses the closest match between each fix and tidal observations or predictions in temporal and spatial scales 
 in order to estimate height of high tide at the time and location of each fix. 
 It does not filter data when the "filter" option is disabled but it returns the estimated water depth of each location with 
-the tide effect accounted for (bathymetry + tide height). The estimated water depths are returned in the "depth.exp" column.
+the tide effect accounted for (bathymetry + tide). The estimated water depths are returned in the "depth.exp" column.
 }
 \note{
 Input data must not contain temporal or spatial duplicates.
 }
 \examples{
 
-### Load data sets
-# Fastloc GPS data obtained from a green turtle
+#### Load data sets
+## Fastloc GPS data obtained from a green turtle
 data(turtle)
 
-# Bathymetry model developed by Beaman (2010)
+## Bathymetry model developed by Beaman (2010)
 data(bathymodel)
 
-# A tidal plane for the example site
+## A tidal plane for the example site
 data(tidalplane)
 
-# Tidal observations and predictions for the example site
+## Tidal observations and predictions for the example site
 data(tidedata)
 
-# Map for the example site
-data(basemap)
+## Maps for the example site
+data(SandyStrait)
 
 
-### Remove temporal and/or spatial duplicates
+#### Remove temporal and/or spatial duplicates
 turtle.dup <- dupfilter(turtle)
 
 
-### Remove biologically unrealistic fixes 
-## Estimate vmax
-vmax <- est.vmax(turtle.dup)
-
-## Estimate maxvlp
-maxvlp <- est.maxvlp(turtle.dup)
-
-## Apply ddfilter
-turtle.dd <- ddfilter(turtle.dup, vmax=vmax, maxvlp=maxvlp)
+#### Remove biologically unrealistic fixes 
+turtle.dd <- ddfilter(turtle.dup, vmax=9.9, qi=4, ia=90, maxvlp=2.0)
 
 
-### Apply depthfilter
+#### Apply depthfilter
 turtle.dep <- depthfilter(sdata=turtle.dd, 
                           bathymetry=bathymodel, 
                           tide=tidedata, 
                           tidal.plane=tidalplane)
 
 
-### Plot data on a map before and after depthfilter is applied
-par(mfrow=c(1,2))
-par(mar=c(4,5,2,1))
-plot(basemap, col="grey", xlim=c(152.8, 153.1), ylim=c(-25.75, -25.24))
-axis(1, at=seq(from=152, to=154, by=0.2))
-axis(2, at=seq(from=-26, to=-25, by=0.2), las=2)
-mtext("Longitude", side=1, line=2.5)
-mtext("Latitude", side=2, line=3.5)
-box()
-title("Not applied")
-LatLong <- data.frame(Y=turtle.dup$lat, X=turtle.dup$lon)
-coordinates(LatLong) <- ~X+Y
-proj4string(LatLong) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-plot(LatLong, pch=21, bg="yellow", add=TRUE)
-
-par(mar=c(4,4,2,2))
-plot(basemap, col="grey", xlim=c(152.8, 153.1), ylim=c(-25.75, -25.24))
-axis(1, at=seq(from=152, to=154, by=0.2))
-axis(2, at=seq(from=-26, to=-25, by=0.2), las=2)
-mtext("Longitude", side=1, line=2.5)
-box()
-title("Applied")
-LatLong <- data.frame(Y=turtle.dep$lat, X=turtle.dep$lon)
-coordinates(LatLong) <- ~X+Y
-proj4string(LatLong) <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-plot(LatLong, pch=21, bg="yellow", add=TRUE)
+#### Plot data removed or retained by depthfilter
+plotMap(turtle.dd, bgmap=SandyStrait, point.size = 2, line.size = 0.5, axes.lab.size = 0, 
+         title.size=0, sb.distance=10, multiplot = FALSE)[[1]] + 
+geom_point(aes(x=lon, y=lat), data=turtle.dep, size=2, fill="yellow", shape=21)+
+geom_point(aes(x=x, y=y), data=data.frame(x=c(152.68, 152.68), y=c(-25.3, -25.34)), 
+           size=3, fill=c("yellow", "red"), shape=21) + 
+annotate("text", x=c(152.7, 152.7), y=c(-25.3, -25.34), label=c("Retained", "Removed"), 
+        colour="black", size=4, hjust = 0)
 }
 \references{
 Shimada T, Limpus C, Jones R, Hazel J, Groom R, Hamann M (2016) 
@@ -137,7 +112,7 @@ Beaman, R.J. (2010) Project 3DGBR: A high-resolution depth model for the Great B
 Marine and Tropical Sciences Research Facility (MTSRF) Project 2.5i.1a Final Report, MTSRF, Cairns, Australia, pp. 13 plus Appendix 1.
 }
 \seealso{
-dupfilter, ddfilter
+\code{\link{dupfilter}}, \code{\link{ddfilter}}
 }
 \author{
 Takahiro Shimada
