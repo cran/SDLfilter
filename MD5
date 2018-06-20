@@ -1,8 +1,8 @@
-e4ec1c85b4379a6c17da50dd007bc39c *DESCRIPTION
+91607952bcfe490ab4688093e3ed98cf *DESCRIPTION
 bc1d0bac1c04fd5dcbed8a3da2b678a9 *LICENSE
 eea934344e743501aa75c7f432e4e948 *NAMESPACE
-340eb55265c878f1173f946a40b7a019 *NEWS
-4445e76329654b9260f373f2e05e8384 *NEWS.md
+79e89d0af6104de785cf481adf37917c *NEWS
+7cf973a70ca9d0e20f6fb78b35fe18bf *NEWS.md
 42c72560de400608496538dc5eabf62f *R/Australia.R
 0d52c4b352267d9e05b2675c6b21a4bc *R/SandyStrait.R
 730bfc991ab574b06554ff250b47f508 *R/bathymodel.R
@@ -15,14 +15,14 @@ a22abe594c9a0e06d6c172ff5948483e *R/dupfilter.qi.r
 aae7cfe8eeb0e367b51489ab05d0d350 *R/dupfilter.r
 a81a9b35a31d886329ab0461382ef5c4 *R/dupfilter.space.r
 1ab6bb3a35f8ddb2cd1dabbb3513fcc5 *R/dupfilter.time.r
-0139ebf54226750ef644ed23c2ee388f *R/estMaxVlp.R
+4da1e8ea810f9ace8a2e5f099baeb5b2 *R/estMaxVlp.R
 1ad162ca21e0a762cdb5078719763893 *R/estVmax.R
 bf27ebb290bef60ca5868a5966a73ead *R/plotMap.R
 698b0834510edde1f17b990bbeff9e29 *R/tidalplane.R
 12578784fe2a47511ce503e0dcf56c47 *R/tidedata.R
 3104bf3fb9e06f05544242d3623d6cb0 *R/turtle.R
 c5288872a402fd19edb6b32952fd6ec4 *R/turtle2.R
-b6770431dd360008efed465944409193 *README.md
+37939febce42d04e421194b48019317e *README.md
 621606d61c95ff6990340fda414d06f8 *data/Australia.rda
 f9d1cd3b8a7e8dfe90f1a52df5abfaac *data/SandyStrait.rda
 71bf0b9946e4c8354b3e2103c3e29dc4 *data/bathymodel.rda
@@ -43,7 +43,7 @@ c567f67351f55ccc65895174ca596c24 *man/bathymodel.Rd
 2661e8776995fb80006c821661cb9963 *man/dupfilter.qi.Rd
 2a159158f11df00f05633623ee68d819 *man/dupfilter.space.Rd
 e2c378d169fa5f975df3c8a85dae11d8 *man/dupfilter.time.Rd
-cc07605755dde529a62669e1c2dcab8c *man/est.maxvlp.Rd
+39d0d45a8e02343b9221b63d9b4ef1cc *man/est.maxvlp.Rd
 90c31e618aa95dc469f3feb6522715da *man/est.vmax.Rd
 49c4fbaa81963b553d27f7b71168d834 *man/figures/README-example.png
 b061de5bd2854e54d024d45a0945e1ce *man/plotMap.Rd

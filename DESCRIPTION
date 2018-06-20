@@ -1,8 +1,8 @@
 Package: SDLfilter
 Type: Package
 Title: Filtering Satellite-Derived Locations
-Version: 1.1.0
-Date: 2018-04-27
+Version: 1.1.1
+Date: 2018-06-10
 Author: Takahiro Shimada
 Maintainer: Takahiro Shimada <takahiro.shimada@my.jcu.edu.au>
 Description: Functions to filter GPS and/or Argos locations. The provided
@@ -19,6 +19,6 @@ BugReports: https://github.com/TakahiroShimada/SDLfilter/issues
 LazyData: true
 RoxygenNote: 6.0.1
 NeedsCompilation: no
-Packaged: 2018-04-28 02:45:41 UTC; taka
+Packaged: 2018-06-19 08:41:43 UTC; taka
 Repository: CRAN
-Date/Publication: 2018-04-28 03:09:19 UTC
+Date/Publication: 2018-06-20 09:52:54 UTC
