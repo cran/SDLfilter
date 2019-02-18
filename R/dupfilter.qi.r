@@ -121,5 +121,7 @@ dupfilter.qi<-function (sdata, step.time=0){
   
   #### Delete working columns and return the output
   sdata3$rm<-NULL
+  # drops<-c("rm", "sTime")
+  # sdata3<-sdata3[,!(names(sdata3) %in% drops)] 
   return(sdata3)
 }

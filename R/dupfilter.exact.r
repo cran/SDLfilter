@@ -192,6 +192,7 @@ dupfilter.exact<-function (sdata){
   
   #### Delete working columns and return the output
   drops<-c("rm", "rm2", "rm3")
+  # drops<-c("rm", "rm2", "rm3", "sTime", "sDist")
   sdata3<-sdata3[,!(names(sdata3) %in% drops)] 
   return(sdata3)
 }

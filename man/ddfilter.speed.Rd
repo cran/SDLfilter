@@ -21,7 +21,7 @@ If this value is unknown, the function "est.vmax" can be used to estimate the va
 2 = a location is removed if the speed BOTH from a previous and to a subsequent location exceeds a given threshold speed. Default is FALSE.}
 }
 \value{
-A data frame is returned with the locations identified by this filter removed. 
+A data frame is returned without locations identified by this filter. 
 The following columns are added: "pTime", "sTime", "pDist", "sDist", "pSpeed", "sSpeed". 
 "pTime" and "sTime" are hours from a previous and to a subsequent fix respectively. 
 "pDist" and "sDist" are straight distances in kilometres from a previous and to a subsequent fix respectively. 

@@ -406,6 +406,7 @@ dupfilter.time<-function (sdata, step.time=0) {
   
   #### Delete working columns and return the output
   drops<-c("PSL1", "PSL2", "PSL3", "PSL4", "rm1", "rm2", "rm3", "rm4")
+  # drops<-c("PSL1", "PSL2", "PSL3", "PSL4", "rm1", "rm2", "rm3", "rm4", "sTime")
   sdata3<-sdata3[,!(names(sdata3) %in% drops)] 
   return(sdata3)
 }

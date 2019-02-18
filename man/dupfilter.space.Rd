@@ -4,7 +4,8 @@
 \alias{dupfilter.space}
 \title{Filter spatial duplicates}
 \usage{
-dupfilter.space(sdata, step.time = 0, step.dist = 0, conditional = FALSE)
+dupfilter.space(sdata, step.time = 0, step.dist = 0,
+  conditional = FALSE)
 }
 \arguments{
 \item{sdata}{A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
@@ -23,7 +24,8 @@ Locations are considered spatial duplicates if the spatial interval is less than
 less than the time specified in "step.time". Default is FALSE.}
 }
 \value{
-Input data frame is returned with spatial duplicates removed. The following columns are added: "pTime", "sTime", "pDist", "sDist". 
+Input data frame is returned with spatial duplicates removed. 
+The following columns are added: "pTime", "sTime", "pDist", "sDist". 
 "pTime" and "sTime" are hours from a previous and to a subsequent fix respectively. 
 "pDist" and "sDist" are straight distances in kilometres from a previous and to a subsequent fix respectively.
 }
