@@ -1,15 +1,32 @@
 ---
-output: html_notebook
-editor_options: 
+editor_options:
   chunk_output_type: inline
+output:
+  html_document:
+    df_print: paged
 ---
-## News for Package 'SDLfilter'
+News for Package 'SDLfilter'
+=========
+
+#### Version 2.0.0 (2020-05-04)
+
+* added four new functions (boot_overlap, boot_area, asymptote, percent_vol) to assess sample sizes of animal tracking data.
+* added a new function (track_param) to calculate some parameters of animal tracking data (i.e. time, distance, speed, angle between locations).
+* added a new function (kml_track) to visualise the tracking data.
+* added a new example data "curtis".
+* added a new argument "type" in the depthfilter function.
+* renamed some functions (ddfilter.loop -> ddfilter_loop; ddfilter.speed -> ddfilter_speed; dupfilter.exact -> dupfilter_exact; dupfilter.qi -> dupfilter_qi; dupfilter.space -> dupfilter_space; dupfilter.time -> dupfilter_time, distantfilter -> distfilter).
+* renamed an argument in ddfilter (maxvlp -> vmaxlp).
+* renamed the plotMap to map_track.
+* improved the map_track function.
+* improved the R documentations.
+* improved the processing speed of the dupfilter function and its dependent functions.
+* updated the vmax and maxvlp functions. In the previous version, when input data contain duplicate locations, the function ceased with error messages. These errors are now avoided by removing duplicate locations using the dupfilter function prior to calculation of vmax and maxvlp.
 
 
 #### Version 1.2.1 (2019-02-19)
 
 * amended "plotMap" in accordance with the ggsn update to version 0.5.0. 
-
 
 #### Version 1.2.0 (2019-02-18)
 
@@ -23,7 +40,7 @@ editor_options:
 
 #### Version 1.1.0 (2018-04-27)
 
-* added a new function (plot.map) to plot locations.
+* added a new function (plotMap) to plot locations.
 * updated vignette.
 
 #### Version 1.0.0 (2018-02-08)

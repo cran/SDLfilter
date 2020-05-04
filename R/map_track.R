@@ -1,20 +1,22 @@
-#' @aliases plotMap
-#' @title Plot location data
-#' @description Function to easily plot locations on a map or a satellite image. 
+#' @aliases map_track
+#' @title Plot location data on a map
+#' @description Function to plot tracking data on a map or a satellite image. 
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon". 
-#' A map is created for each subset of location data grouped by the unique "id". 
-#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
-#' @param xlim Limits for x axis. If not specified, the values are determined as the maximum range of the input data with an additional margin (see \emph{margin}).    
-#' @param ylim Limits for x axis. See \emph{xlim} for details. 
+#' The function creates a map for each unique "id". 
+#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. 
+#' "lat" and "lon" are the latitude and longitude of each location in decimal degrees. 
+#' @param xlim,ylim Limits for x and y axes. 
+#' If not specified, the values are determined as the maximum range of the input data plus an additional margin (see \emph{margin}).    
 #' @param margin Set the amount of spaces added around the periphery of the plot. The value is scaled to the plot. 
 #' The smaller value increases the margin.
-#' @param bgmap A data.frame of a background map data, containing the following headers: "long", "lat", "group". 
-#' If not specified, the "world" map provided by the \emph{maps} package is used. 
-#' The Google Maps ("terrain", "satellite", "roadmap", "hybrid") can also be queried.
-#' @param google.key If the Google Maps are queried, a valid API key (a string) needs to be specified here. See \code{\link[ggmap]{register_google}} for details.
-#' @param map.bg Background colour of the map. This argument is ignored when any of the Google Maps is selected.
-#' @param map.col Outline colour of the map. This argument is ignored when any of the Google Maps is selected.
-#' @param zoom Map zoom for the Google Maps. See \code{\link[ggmap]{get_map}} for details. 
+#' @param bgmap A data frame of a background map data, containing the following headers: "long", "lat", "group". 
+#' If not specified, the \code{\link[maps]{world}} map is used. 
+#' Google Maps ("terrain", "satellite", "roadmap", "hybrid") can also be queried.
+#' @param google.key If Google Maps are queried, a valid API key (a string) needs to be specified here. See \code{\link[ggmap]{register_google}} for details.
+#' @param map.bg Background colour of the map. This argument is ignored when any Google Maps is selected.
+#' @param map.col Outline colour of the map. This argument is ignored when any Google Maps is selected.
+#' @param zoom Map zoom for Google Maps. Default (NULL) to estimate the zoom from each data set. 
+#' For other options, see \code{\link[ggmap]{get_map}} for details. 
 #' @param point.bg The colour to fill in a symbol.
 #' @param point.col The colour for the outline of a symbol.
 #' @param point.symbol An integer or a string to specify the symbol type. See \code{\link[ggplot2]{shape}} for details. 
@@ -28,7 +30,7 @@
 #' @param sb.line.col The colour of the scale bar.
 #' @param sb.text.size An integer to specify the text size for the scale bar.
 #' @param sb.text.col The colour of the text for the scale bar.
-#' @param sb.space Set the amount of space between the scale bar and the text for the scale bar. 
+#' @param sb.space Set the amount of space between the scale bar and the text. 
 #' The value is scaled to the plot. The smaller value increases the space.
 #' @param title The main title for each plot. If not specified, the "id" will be used.
 #' @param title.size An integer to specify the size of the title.
@@ -40,10 +42,12 @@
 #' @import ggmap ggplot2
 #' @importFrom ggsn scalebar
 #' @importFrom gridExtra marrangeGrob
+#' @importFrom raster pointDistance
+#' @importFrom maps map
 #' @export
-#' @return An arrangelist is returned when multiplot is TRUE. Otherwise a list is returned. 
+#' @return An arrangelist is returned when \emph{multiplot} is TRUE. Otherwise a list is returned. 
 #' @author Takahiro Shimada
-#' @seealso \code{\link{dupfilter}}, \code{\link{ddfilter}}, \code{\link{est.vmax}}, \code{\link{est.maxvlp}}
+#' @seealso \code{\link{kml_track}}, \code{\link{dupfilter}}, \code{\link{ddfilter}}, \code{\link{vmax}}, \code{\link{vmaxlp}}
 #' @examples
 #' #### Load data sets
 #' ## Fastloc GPS data obtained from two green turtles
@@ -56,25 +60,24 @@
 #'  
 #' 
 #' #### ddfilter
-#' V <- est.vmax(turtle.dup)
-#' VLP <- est.maxvlp(turtle.dup)
-#' turtle.dd <- ddfilter(turtle.dup, vmax=V, maxvlp=VLP)
+#' V <- vmax(turtle.dup)
+#' VLP <- vmaxlp(turtle.dup)
+#' turtle.dd <- ddfilter(turtle.dup, vmax=V, vmaxlp=VLP)
 #' 
 #' 
 #' #### Plot filtered data for each animal
 #' ## using the low-resolution world map
-#' plotMap(turtle.dd, point.size = 2, line.size = 0.5, axes.lab.size = 0, ncol=2, nrow=1)
+#' map_track(turtle.dd, point.size = 2, line.size = 0.5, axes.lab.size = 0, ncol=2, nrow=1)
 #'
 #'\dontrun{
 #' ## using the high-resolution google satellite images
-#' plotMap(turtle.dd, point.size = 2, line.size = 0.5, axes.lab.size = 0, ncol=2, nrow=1, 
-#'         bgmap = "satellite", sb.line.col = "white", sb.text.col = "white", key = "an_api_key")
+#' map_track(turtle.dd, bgmap = "satellite", google.key = "key", ncol=2)
 #'}
 
 
 #### Plot data removed or retained by ddfilter
-plotMap<-function(sdata, xlim=NULL, ylim=NULL, margin=10, 
-                   bgmap=NULL, google.key=NULL, map.bg="grey", map.col="black", zoom="auto", 
+map_track<-function(sdata, xlim=NULL, ylim=NULL, margin=10, 
+                   bgmap=NULL, google.key=NULL, map.bg="grey", map.col="black", zoom=NULL, 
                    point.bg="yellow", point.col="black", point.symbol=21, point.size=1,
                    line.col="lightgrey", line.type=1, line.size=0.5,
                    sb.distance=NULL, sb.lwd=1, sb.line.col="black", sb.text.size=4, sb.text.col="black", sb.space=3,
@@ -82,7 +85,8 @@ plotMap<-function(sdata, xlim=NULL, ylim=NULL, margin=10,
                    multiplot=TRUE, nrow=1, ncol=1){
   
   #### Get data to plot
-  ID<-levels(factor(sdata$id))
+  ID<-as.character(unique(sdata$id))
+  ID <- ID[!is.na(ID)]
   
   p.all<-lapply(1:length(ID), function(i){
     #### Subset data
@@ -122,9 +126,24 @@ plotMap<-function(sdata, xlim=NULL, ylim=NULL, margin=10,
     } else if(any(bgmap %in% c("terrain", "satellite", "roadmap", "hybrid"))) {
       ggmap::ggmap_show_api_key()
       ggmap::register_google(key = google.key)
-      map.data<-ggmap::get_map(location = c(lon = mean(xlim), lat = mean(ylim)), 
-                               color = "color", source = "google", maptype = bgmap, zoom=zoom)
-      p <-ggmap::ggmap(map.data)  
+      
+      if(is.null(zoom)){
+        lonlength <- diff(xlim)
+        latlength <- diff(ylim)
+        zoomlon <- ceiling( log2( 360*2 / lonlength) )
+        zoomlat <- ceiling( log2( 180*2 / latlength) )
+        zm <- min(zoomlon, zoomlat)
+        
+        map.data<-ggmap::get_map(location = c(lon = mean(xlim), lat = mean(ylim)), 
+                                 color = "color", source = "google", maptype = bgmap, 
+                                 zoom = zm)
+
+      } else {
+        map.data<-ggmap::get_map(location = c(lon = mean(xlim), lat = mean(ylim)), 
+                                 color = "color", source = "google", maptype = bgmap, zoom=zoom)
+      }
+      
+      p <- ggmap::ggmap(map.data)  
 
     } else {
       map.data<-bgmap
@@ -157,17 +176,17 @@ plotMap<-function(sdata, xlim=NULL, ylim=NULL, margin=10,
     #### Add scale
     # Get parameters
     if(is.null(sb.distance)){
-      sb.distance<-round(((xlim[2]-xlim[1])*111.139)/4)
-      sb<-ggsn::scalebar(x.min=xlim[1]+extra2, x.max=xlim[2]-extra2, y.min=ylim[1]+extra2, y.max=ylim[2]-extra2,
-                         dist = sb.distance, dist_unit = "km", transform = TRUE, model = 'WGS84', location="bottomleft", st.dist=.03)
-    } else {
-      sb<-ggsn::scalebar(x.min=xlim[1]+extra2, x.max=xlim[2]-extra2, y.min=ylim[1]+extra2, y.max=ylim[2]-extra2,
-                         dist = sb.distance, dist_unit = "km", transform = TRUE, model = 'WGS84', location="bottomleft", st.dist=.03)
+      sb.distance <- raster::pointDistance(c(xlim[1], ylim[1]), c(xlim[2], ylim[1]), lonlat = TRUE)/4
+      digi <- nchar(trunc(sb.distance))
+      sb.distance <- round(sb.distance/10^(digi-1)) * 10^(digi-1)
+      sb.distance <- sb.distance/1000
     }
-    sb.xmin<-min(sb[[1]]$data$x)
-    sb.xmax<-max(sb[[1]]$data$x)
-    sb.ymin<-min(sb[[1]]$data$y)
-    sb.ymax<-max(sb[[1]]$data$y)
+    
+    sb<-ggsn::scalebar(x.min=xlim[1]+extra2, x.max=xlim[2]-extra2, y.min=ylim[1]+extra2, y.max=ylim[2]-extra2,
+                       dist = sb.distance, dist_unit = "km", transform = TRUE, model = 'WGS84', location="bottomleft", st.dist=.03)
+      
+    sb.xmin<-min(sb[[1]]$data$x); sb.xmax<-max(sb[[1]]$data$x)
+    sb.ymin<-min(sb[[1]]$data$y); sb.ymax<-max(sb[[1]]$data$y)
     
     sb.df<-data.frame(x=c(sb.xmin, sb.xmax), y=c(sb.ymax, sb.ymax))
     
@@ -178,7 +197,7 @@ plotMap<-function(sdata, xlim=NULL, ylim=NULL, margin=10,
   })
   
   if(isTRUE(multiplot)){
-    gridExtra::marrangeGrob(p.all, nrow=nrow, ncol=ncol)
+    gridExtra::marrangeGrob(p.all, nrow=nrow, ncol=ncol, top=NULL)
   } else {
     p.all
   }

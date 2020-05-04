@@ -1,90 +1,51 @@
-#' @aliases est.maxvlp
+#' @aliases vmaxlp
 #' @title Estimate maximum one-way linear speed of a loop trip
-#' @description This function estimates the maximum one-way linear speed of a loop trip as described in Shimada et al. (2012).
+#' @description Function to estimate the maximum one-way linear speed of a loop trip as described in Shimada et al. (2012).
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
-#' This filter is independently applied to a subset of data grouped by the unique "id". 
-#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
-#' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
-#' (e.g. number of GPS satellites used for estimation).
-#' @param qi An integer specifying the minimum quality index associated with a location used for the estimation. Default is 4.
-#' @param prob A numeric value specifying a probability to obtain sample quantiles. Default is 0.99.
+#' "id" is the unique representing an individual. 
+#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. 
+#' "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
+#' "qi" is the numerical quality index associated with each location fix where a greater number indicates a higher accuracy 
+#' (e.g. the number of GPS satellites involved in estimation).
+#' @param qi An integer specifying the minimum quality index associated with a location used for the estimation. 
+#' Default is 4 (e.g. 4 GPS satellite or more).
+#' @param prob A numeric value to specify a sample quantile. Default is 0.99.
+#' @param ... Extra arguments passed to \code{\link{dupfilter}}.
 #' @import sp
 #' @importFrom raster pointDistance
 #' @importFrom stats quantile
 #' @export
 #' @details The function first detects a "loop trip". 
-#' Loop trip behaviour is represented by spatial departure and return with more than 3 consecutive locations (Shimada et al 2012). 
-#' It then calculates the net (i.e. straight-line) distance between the departure and turning location as well as 
-#' the turning and return location of the loop trip, and from that calculated the net speed in and out. 
-#' It discards extreme values based on the quantile specified by a user (default is 0.99). 
-#' This is to exclude outliers potentially contained in the original data set. 
+#' Loop trip behaviour is represented by spatial departure and return involving more than 3 consecutive locations 
+#' \href{http://doi.org/10.3354/meps09747}{(Shimada et al 2012)}. 
+#' The function calculates the net (i.e. straight-line) distance between the departure and turning point as well as 
+#' the turning point and return location of a loop trip. 
+#' It then calculates the one-way travelling speed to or from each turning point for each loop trip. 
+#' The function discards extreme values, based on the specified quantile, to exclude potential outliers from the estimation process.
 #' The maximum value in the retained dataset (i.e. without outliers) represents the maximum one-way linear speed at which 
-#' an animal would travel during a loop trip. A minimum of 8 locations are required to run this function.
-#' @return A vector is returned. The unit is in kilometres per hour. 
+#' an animal would travel during a loop trip.
+#' @return Maximum one-way linear speed of a loop trip (vmaxlp) estimated from the input data. The unit km/h.
 #' @author Takahiro Shimada
-#' @note Input data must not contain temporal or spatial duplicates.
+#' @note The input data must not contain temporal or spatial duplicates. A minimum of 8 locations are required.
 #' @references Shimada T, Jones R, Limpus C, Hamann M (2012) 
 #' Improving data retention and home range estimates by data-driven screening. 
-#' Marine Ecology Progress Series 457:171-180 doi:10.3354/meps09747
-#' @seealso \code{\link{ddfilter}}, \code{\link{ddfilter.loop}}
+#' \emph{Marine Ecology Progress Series} 457:171-180 doi:\href{http://doi.org/10.3354/meps09747}{10.3354/meps09747}
+#' @seealso \code{\link{ddfilter}}, \code{\link{ddfilter_loop}}, \code{\link{track_param}}, \code{\link{dupfilter}}
 
 
-est.maxvlp<-function(sdata, qi=4, prob=0.99){
+vmaxlp<-function(sdata, qi=4, prob=0.99, ...){
   #### Organize data
   ## Subset data by quality index
   sdata<-sdata[sdata$qi>=qi,]
+  
+  ## Filter duplicate locations
+  sdata <- dupfilter(sdata, ...)
 
-  ## Sort data in alphabetical and chronological order
-  sdata<-with(sdata, sdata[order(id, DateTime),])
-  row.names(sdata)<-1:nrow(sdata)
+  ## Get movement parameters
+  sdata <- track_param(sdata, param = c('time', 'distance', 'speed', 'angle'))
   
   
-  ## Get Id of each animal
-  IDs<-levels(factor(sdata$id))
-  
-  
-  ## Hours from a previous and to a subsequent location (pTime & sTime)
-  stepTime<-function(j){
-    timeDiff<-diff(sdata[sdata$id %in% j, "DateTime"])
-    units(timeDiff)<-"hours"
-    c(as.numeric(timeDiff), NA)
-  } 
-  
-  sTime<-unlist(lapply(IDs, stepTime))  
-  sdata$pTime<-c(NA, sTime[-length(sTime)])
-  sdata$sTime<-sTime
-  
-  
-  ## Distance from a previous and to a subsequent location (pDist & sDist)
-  calcDist<-function(j){
-      turtle<-sdata[sdata$id %in% j,]  
-      LatLong<-data.frame(Y=turtle$lat, X=turtle$lon)
-      sp::coordinates(LatLong)<-~X+Y
-      sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-      
-      #pDist
-      c(NA, raster::pointDistance(LatLong[-length(LatLong)], LatLong[-1], lonlat=T)/1000)
-  }
-  
-  sdata$pDist<-unlist(lapply(IDs, calcDist))
-  sdata$sDist<-c(sdata$pDist[-1], NA)
-  
-  
-  # Speed from a previous and to a subsequent location in km/h
-  sdata$pSpeed<-sdata$pDist/sdata$pTime
-  sdata$sSpeed<-sdata$sDist/sdata$sTime
-  
-  
-  ## Calculate inner angle in degree
-  LatLong<-data.frame(Y=sdata$lat, X=sdata$lon, tms=sdata$DateTime, id=sdata$id)
-  sp::coordinates(LatLong)<-~X+Y
-  sp::proj4string(LatLong)<-sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-  tr<-trip::trip(LatLong, c("tms", "id"))
-  sdata$inAng<-trip::trackAngle(tr)
-  sdata<-with(sdata, sdata[complete.cases(inAng),])
-  
-  
-  #### Exclude datasets less than 6 locations
+  #### Exclude datasets less than 8 locations
   ndata<-table(as.character(sdata$id))
   id.exclude<-names(ndata[as.numeric(ndata)<8])
   sdata<-with(sdata, sdata[!id %in% id.exclude,])
@@ -222,20 +183,8 @@ est.maxvlp<-function(sdata, qi=4, prob=0.99){
   row.names(sdata)<-1:nrow(sdata)
   
   
-  #### Calculate speed
-  sTime<-unlist(lapply(IDs, stepTime))  
-  sdata$pTime<-c(NA, sTime[-length(sTime)])
-  sdata$sTime<-sTime
-  
-  
-  ## Distance from a previous and to a subsequent location (pDist & sDist)
-  sdata$pDist<-unlist(lapply(IDs, calcDist))
-  sdata$sDist<-c(sdata$pDist[-1], NA)
-  
-  
-  ## Speed from a previous and to a subsequent location in km/h
-  sdata$pSpeed<-sdata$pDist/sdata$pTime
-  sdata$sSpeed<-sdata$sDist/sdata$sTime
+  ## Get movement parameters
+  sdata <- track_param(sdata, param = c('time', 'distance', 'speed'))
   
   
   #### Retain locations with more than two consecutive points 
@@ -251,13 +200,13 @@ est.maxvlp<-function(sdata, qi=4, prob=0.99){
   SampleSize<-round(length(Vlp)*prob)
   LoopTrips<-round(SampleSize/2)
   cat("\n")
-  cat("The maximum one-way linear speed of a loop trip (Max.Vlp) was estimated using", SampleSize, "Vlp from", LoopTrips, "loop trips")
-  cat("\n")
-  cat("Max.Vlp:", round(MaxVlp,1), "km/h")
-  cat("\n\n")
-  cat("  Warning: insufficient data to detect a loop trip from", id.exclude)
-  cat("\n\n")
-  
+  cat("The maximum one-way linear speed of a loop trip (vmaxlp) was estimated using", SampleSize, "Vlp from", LoopTrips, "loop trips.", fill = TRUE)
+  cat("vmaxlp:", round(MaxVlp,1), "km/h", fill = TRUE)
+  if(length(id.exclude)>0){
+    message('Warning: insufficient data to estimate vlp from:')
+    message(paste(id.exclude, collapse = ', '))
+  }
+
   
   #### Maximum Vlp given # percentile considered outliers
   return(MaxVlp)

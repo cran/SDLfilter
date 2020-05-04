@@ -1,52 +1,65 @@
 #' @aliases depthfilter
 #' @title Filter locations by water depth
-#' @description Function to remove fixes located at a given height from the high tide line.
+#' @description Function to filter locations according to bathymetry and tide.
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
-#' This filter is independently applied to a subset of data grouped by the unique "id". 
-#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. "lat" and "lon" are the recorded latitude and longitude in decimal degrees. 
-#' "qi" is the numerical quality index associated with each fix where the greater number represents better quality 
+#' The function filters the input data by the unique "id". 
+#' "DateTime" is date & time in class \code{\link[base]{POSIXct}}. 
+#' "lat" and "lon" are the latitude and longitude of each location in decimal degrees. 
+#' "qi" is the numerical quality index associated with each location fix where a greater number indicates a higher accuracy 
 #' (e.g. number of GPS satellites used for estimation).
-#' @param bathymetry object of class "RasterLayer" containing bathymetric data in meters. Geographic coordinate system is WGS84.
-#' @param extract Method to extract cell values from raster layer inherited from extract function of the raster package. 
-#' Default is "bilinear". See \code{\link[raster]{extract}} for details.
+#' @param bathymetry A RasterLayer object containing bathymetric data in metres. 
+#' Negative and positive values indicate below and above the water respectively. 
+#' Geographic coordinate system is WGS84.
+#' @param extract Method to extract cell values from the raster layer as inherited from the \code{\link[raster]{extract}} function of the raster package. 
+#' Default is bilinear.
 #' @param tide A data frame containing columns with the following headers: "tideDT", "reading", "standard.port". 
-#' "tideDT" is date & time in class POSIXct for each observed tidal height. "reading" is the observed tidal height in meters. 
+#' "tideDT" is date & time in class \code{\link[base]{POSIXct}} at each observation. "reading" is the observed tidal height in metres. 
 #' "standard.port" is the identifier of each tidal station.
-#' @param qi An integer specifying threshold quality index. 
-#' Fixes associated to a quality index higher than the threshold are excluded from the depthfilter. Default is 4
-#' @param depth An integer denoting vertical difference from a high tide line in meters. 
-#' A positive value indicates above the high tide and a negative value indicates below the high tide. 
-#' The function removes fixes above the given threshold. Default is 0 m (i.e. high tide line).
+#' @param qi An integer specifying a threshold of quality index. 
+#' \emph{depthfilter} does not filter a location that is associated with a quality index higher than this threshold. 
+#' Default is 4.
+#' @param type The type of water depth considered in the filtering process.
+#' "exp" is for the water depth experienced by the animal at the time.
+#' This option may be applicable to species that remain in water at all times (e.g. dugongs, dolphins, etc).
+#' "HT" is for the water depth at the nearest high tide (default). 
+#' This option is useful for animals that use inter-tidal zones at high tide and may remain there even after the tide drops (e.g. some sea turtles).
+#' @param height A numerical value to adjust the water depth an animal is likely to use. Default is 0 m. 
+#' This parameter is useful if the minimum water depth used by the animal is known. 
+#' For example, a dugong is unlikely to use water shallower than its body height (e.g. ~0.5 m)
+#' so it may be sensible to consider the fix is an error if the estimated water depth is shallower than its body height.
+#' A negative value indicates below the water surface. 
+#' For the dugong example, to remove locations for which the water depth was <0.5 m, 
+#' it should be specified as; height = -0.5.
+#' By supplying the body height to this argument, all the locations recorded shallower than its body will be removed. 
 #' @param tidal.plane A data frame containing columns with the following headers: 
 #' "standard.port", "secondary.port", "lat", "lon", "timeDiff", "datumDiff". 
 #' "standard.port" is the identifier for a tidal observation station. 
 #' "secondary.port" is the identifier for a station at which tide is only predicted using tidal records observed at the related standard port. 
 #' "lat" and "lon" are the latitude and longitude of each secondary port in decimal degrees. 
 #' "timeDiff" is the time difference between standard port and its associated secondary port. 
-#' "datumDiff" is the baseline difference in meters between bathymetry and tidal observations/predictions 
-#' if each data uses different datum (e.g. LAT and MSL). 
-#' @param filter Default is TRUE. If FALSE, the function does not filter locations but the depth estimates are returned.
+#' "datumDiff" is the baseline difference in metres if bathymetry and tidal observations/predictions 
+#' uses different datum (e.g. LAT and MSL). 
+#' @param filter Default is TRUE. 
+#' If FALSE, the function does not filter locations but it still returns estimates of the water depth experienced by the animal at each location.
 #' @import sp
 #' @importFrom data.table data.table
 #' @importFrom raster pointDistance
 #' @importFrom raster extract
 #' @export
-#' @details This function removes fixes located at a given height from estimated high tide line when the "filter" option is enabled. 
-#' The function chooses the closest match between each fix and tidal observations or predictions in temporal and spatial scales 
-#' in order to estimate height of high tide at the time and location of each fix. 
-#' It does not filter data when the "filter" option is disabled but it returns the estimated water depth of each location with 
-#' the tide effect accounted for (bathymetry + tide). The estimated water depths are returned in the "depth.exp" column. 
-#' @return Input data is returned with two columns added; "depth.exp", "depth.HT". 
-#' "depth.exp" is the estimated water depth at the time of location fixing. 
-#' "depth.HT" is the estimated water depth at the high tide nearest to the time and location of each fix. 
-#' When the "filter" option is enabled, the fixes identified by this filter are removed from the input data. 
+#' @details The function examines each location according to the water depth experienced by the animal or the water depth at the nearest high tide. 
+#' The function looks for the closest match between each fix and tidal observations or predictions in temporal and spatial scales. 
+#' When \emph{filter} is disabled, the function does not filter locations but returns the estimated water depth of each location with 
+#' the tide effect considered (bathymetry + tide). 
+#' @return When \emph{filter} option is enabled, this function filters the input data and returns with two additional columns; "depth.exp", "depth.HT". 
+#' "depth.exp" is the estimated water depth at each location at the time of location fixing. 
+#' "depth.HT" is the estimated water depth at the nearest high tide at each location. 
 #' @author Takahiro Shimada
-#' @note Input data must not contain temporal or spatial duplicates.
+#' @note The input data must not contain temporal or spatial duplicates.
 #' @references Shimada T, Limpus C, Jones R, Hazel J, Groom R, Hamann M (2016) 
 #' Sea turtles return home after intentional displacement from coastal foraging areas. 
-#' Marine Biology 163:1-14 doi:10.1007/s00227-015-2771-0
+#' \emph{Marine Biology} 163:1-14 doi:\href{http://doi.org/10.1007/s00227-015-2771-0}{10.1007/s00227-015-2771-0}
 #' @references Beaman, R.J. (2010) Project 3DGBR: A high-resolution depth model for the Great Barrier Reef and Coral Sea. 
-#' Marine and Tropical Sciences Research Facility (MTSRF) Project 2.5i.1a Final Report, MTSRF, Cairns, Australia, pp. 13 plus Appendix 1.
+#' \emph{Marine and Tropical Sciences Research Facility (MTSRF) Project 2.5i.1a Final Report}, MTSRF, Cairns, Australia, pp. 13 plus Appendix 1.
 #' @seealso \code{\link{dupfilter}}, \code{\link{ddfilter}}
 #' @examples
 #' 
@@ -72,7 +85,7 @@
 #' 
 #' 
 #' #### Remove biologically unrealistic fixes 
-#' turtle.dd <- ddfilter(turtle.dup, vmax=9.9, qi=4, ia=90, maxvlp=2.0)
+#' turtle.dd <- ddfilter(turtle.dup, vmax=9.9, qi=4, ia=90, vmaxlp=2.0)
 #'
 #'
 #' #### Apply depthfilter
@@ -83,7 +96,7 @@
 #' 
 #' 
 #' #### Plot data removed or retained by depthfilter
-#' plotMap(turtle.dd, bgmap=SandyStrait, point.bg = "red", point.size = 2, line.size = 0.5, 
+#' map_track(turtle.dd, bgmap=SandyStrait, point.bg = "red", point.size = 2, line.size = 0.5, 
 #'         axes.lab.size = 0, title.size=0, sb.distance=10, multiplot = FALSE)[[1]] + 
 #' geom_point(aes(x=lon, y=lat), data=turtle.dep, size=2, fill="yellow", shape=21)+
 #' geom_point(aes(x=x, y=y), data=data.frame(x=c(152.68, 152.68), y=c(-25.3, -25.34)), 
@@ -94,7 +107,7 @@
 
 
 
-depthfilter<-function(sdata, bathymetry, extract="bilinear", tide, qi=4, depth=0, tidal.plane, filter=TRUE) {
+depthfilter<-function(sdata, bathymetry, extract="bilinear", qi=4, tide, tidal.plane, type = "HT", height=0, filter=TRUE) {
   
   OriginalSS<-nrow(sdata)
   
@@ -224,7 +237,7 @@ depthfilter<-function(sdata, bathymetry, extract="bilinear", tide, qi=4, depth=0
   sdata$depth.exp<-with(sdata, bathy+adj.datum-adj.reading)
   
   
-  if(isTRUE(filter)){
+  if(isTRUE(filter) && type %in% "HT"){
       ### Water depth at closest high tide
       ## Organize tidal data
       #Estimate high tide at each port: (0=High, 1=others)
@@ -275,8 +288,8 @@ depthfilter<-function(sdata, bathymetry, extract="bilinear", tide, qi=4, depth=0
       sdata$depth.HT<-with(sdata, bathy+adj.datum-adj.reading.HT)
       
       
-      ### Remove locations according to water depth at high tide: (0 = remove, 1 = keep)
-      sdata<-with(sdata, sdata[!(qi<=qi & depth.HT>depth),])
+      ### Remove locations according to water depth at high tide
+      sdata<-with(sdata, sdata[!(qi<=qi & depth.HT>height),])
       
       
       #### Re-order data
@@ -292,14 +305,11 @@ depthfilter<-function(sdata, bathymetry, extract="bilinear", tide, qi=4, depth=0
       DepthEst<-nrow(sdata[!(is.na(sdata$depth.exp)),])
       
       cat("\n")
-      cat("Input data:", OriginalSS, "locations")
+      cat("Input data:", OriginalSS, "locations.", fill = TRUE)
+      cat("Filtered data:", FilteredSS, "locations.", fill = TRUE)
+      cat("depthfilter removed ", RemovedSamplesN, " locations (", RemovedSamplesP, "% of original data).", sep="", fill = TRUE)
+      cat("Experienced water depth (bathymetry + tide) was estiamted for", DepthEst, "of", OriginalSS, "locations.", fill = TRUE)
       cat("\n")
-      cat("Filtered data:", FilteredSS, "locations")
-      cat("\n")
-      cat("depthfilter removed ", RemovedSamplesN, " locations (", RemovedSamplesP, "% of original data)", sep="")
-      cat("\n")
-      cat("Actual water depth (bathymetry + tide) was estiamted for", DepthEst, "of", OriginalSS, "locations")
-      cat("\n\n")
       
       
       #### Delete working columns and return the output
@@ -307,6 +317,36 @@ depthfilter<-function(sdata, bathymetry, extract="bilinear", tide, qi=4, depth=0
       sdata<-sdata[,!(names(sdata) %in% drops)] 
       return(sdata)
       
+      
+  } else if(isTRUE(filter) && type %in% "exp") {
+    #### Remove locations according to water depth
+    sdata <- with(sdata, sdata[!(qi <= qi & depth.exp > height),])
+    
+    
+    #### Re-order data
+    sdata<-with(sdata, sdata[order(id, DateTime),])
+    row.names(sdata)<-1:nrow(sdata)
+    
+    
+    #### Report the summary of filtering
+    FilteredSS<-nrow(sdata)
+    RemovedSamplesN<-OriginalSS-FilteredSS
+    RemovedSamplesP<-round((1-(FilteredSS/OriginalSS))*100,2)
+    DepthEst<-nrow(sdata[!(is.na(sdata$depth.exp)),])
+    
+    cat("\n")
+    cat("Input data:", OriginalSS, "locations.", fill = TRUE)
+    cat("Filtered data:", FilteredSS, "locations.", fill = TRUE)
+    cat("depthfilter removed ", RemovedSamplesN, " locations (", RemovedSamplesP, "% of original data).", sep="", fill = TRUE)
+    cat("Experienced water depth (bathymetry + tide) was estiamted for", DepthEst, "of", OriginalSS, "locations.", fill = TRUE)
+    cat("\n")
+    
+    
+    #### Delete working columns and return the output
+    drops<-c("nearest.port", "bathy", "standard.port", "adj.reading", "DateTime1")
+    sdata<-sdata[,!(names(sdata) %in% drops)] 
+    return(sdata)
+
   } else {
       
       #### Re-order data
@@ -318,10 +358,9 @@ depthfilter<-function(sdata, bathymetry, extract="bilinear", tide, qi=4, depth=0
       DepthEst<-nrow(sdata[!(is.na(sdata$depth.exp)),])
 
       cat("\n")
-      cat("No location was removed by depthfilter (i.e. filter option was desabled)")
+      message("No location was removed (filter option was desabled).")
+      cat("Experienced water depth (bathymetry + tide) was estiamted for", DepthEst, "of", OriginalSS, "locations.", fill = TRUE)
       cat("\n")
-      cat("Actual water depth (bathymetry + tide) was estiamted for", DepthEst, "of", OriginalSS, "locations")
-      cat("\n\n")
       
       
       #### Delete working columns and return the output
