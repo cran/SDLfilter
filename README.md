@@ -2,14 +2,14 @@
 SDLfilter
 =========
 
-[![DOI](https://zenodo.org/badge/27752990.svg)](https://zenodo.org/badge/latestdoi/27752990)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3631115.svg)](https://doi.org/10.5281/zenodo.3631115)
 [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/SDLfilter)](https://cran.r-project.org/package=SDLfilter)
 
 Overview
 --------
 
-SDLfilter contains a variety of functions to screen GPS and/or Argos
-locations and to assess sample sizes of tracking data for the analysis
+SDLfilter contains a variety of functions to screen GPS/Argos locations
+and to assess the sample size of tracking data to optimise the analysis
 of animal distributions.
 
 Installation
@@ -118,10 +118,10 @@ turtles return home after intentional displacement from coastal foraging
 areas. *Mar Biol* 163:1-14 doi:
 [10.1007/s00227-015-2771-0](http://dx.doi.org/10.1007/s00227-015-2771-0)
 
-Shimada T,…. (under review) Assessing sample sizes for the analysis of
-animal distributions using the R package SDLfilter.
+Shimada T,…. (under review) Optimising sample sizes for animal
+distribution analysis using tracking data.
 
 Current version
 ---------------
 
-2.0.0 (4 May 2020)
+2.0.1 (4 July 2020)
