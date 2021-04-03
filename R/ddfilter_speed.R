@@ -31,7 +31,7 @@
 #' @author Takahiro Shimada
 #' @references Shimada T, Jones R, Limpus C, Hamann M (2012) 
 #' Improving data retention and home range estimates by data-driven screening.
-#' \emph{Marine Ecology Progress Series} 457:171-180 doi:\href{http://doi.org/10.3354/meps09747}{10.3354/meps09747}
+#' \emph{Marine Ecology Progress Series} 457:171-180 \doi{10.3354/meps09747}
 #' @seealso \code{\link{ddfilter}}, \code{\link{ddfilter_loop}}, \code{\link{vmax}}, \code{\link{track_param}}
 
 
@@ -95,7 +95,7 @@ ddfilter_speed<-function (sdata, vmax=8.9, method=1){
         }
       }
       
-      ## Apply the above funtion to each data set seperately
+      ## Apply the above function to each data set separately
       set.rm<-function(j){
         start<-as.numeric(rownames(sdata[sdata$id %in% j,][2,]))
         end<-as.numeric(rownames(sdata[sdata$id %in% j,][1,]))+(nrow(sdata[sdata$id %in% j,])-2)

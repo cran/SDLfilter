@@ -7,13 +7,14 @@
 #' \bold{The grid size and geographical extent must be consistent across each row of the matrix or each RasterLayer object.}
 #' The function assumes that each column of the matrix is associated with a unique geographical location or 
 #' that each RasterLayer has exactly the same geographical extent and resolution. 
-#' @param R An integer specifying the number of iterations.
+#' @param R An integer specifying the number of iterations. A larger \emph{R} is required when the sample size is large.
+#' R = sample size x 200 is often sufficient (e.g. R = 2000 for a sample size 10).
 #' @param method The overlap quantification method. 
 #' "HR" is for the proportion of an individual's home range overlapped by the known habitats of other individuals. 
 #' "PHR" is for the probability of an individual to be within the known habitats of other individuals. 
 #' "VI", "BA" and "UDOI" quantify overlap between UDs using the full probabilistic properties as described in Fieberg and Kochanny (2005). 
 #' For the latter three options, the function calculates overlaps between each additional UD and a collective UD. 
-#' To generate a collective UD, each UD is overlaid and averaged at each grid cell so the probability density of the collective UD sums up to 1 (Shimada et al. in prep).
+#' To generate a collective UD, each UD is overlaid and averaged at each grid cell so the probability density of the collective UD sums up to 1.
 #' @param percent An integer specifying the percent volume of each UD to be considered in the analysis. 
 #' @param quantiles A vector or a number to specify the quantiles to be calculated in the summary of the results. 
 #' @importFrom raster values
@@ -26,17 +27,19 @@
 #' or the probability distribution of an individual and an averaged probability distribution of collective individuals ("VI", "BA", "UDOI").
 #' @return A list containing two data frames - raw results and summary (mean, sd, sem and quantiles at each sample size).
 #' @author Takahiro Shimada
+#' @references Shimada T, Thums M, Hamann M, Limpus CJ, Hays GC, FitzSimmons N, Wildermann NE, Duarte CD, Meekan MG (2021) 
+#' Optimising sample sizes for animal distribution analysis using tracking data. 
+#' \emph{Methods in Ecology and Evolution} 12(2):288-297 \doi{10.1111/2041-210X.13506}
 #' @references Fieberg J & Kochanny CO (2005) Quantifying home-range overlap: The importance of the utilization distribution. 
-#' \emph{The Journal of Wildlife Management}, 69(4), 1346–1359. doi: 10.2193/0022-541x(2005)69[1346:Qhotio]2.0.Co;2
-#' @references Shimada et al. in prep
+#' \emph{The Journal of Wildlife Management}, 69(4), 1346–1359. \doi{10.2193/0022-541x(2005)69[1346:Qhotio]2.0.Co;2}
 #' @examples
 #' \dontrun{
 #' 
-#' #1 Utilisation uistributions of flatback turtles.
-#' data(curtis)
+#' #1 Utilisation uistributions of flatback turtles (n = 29).
+#' data(ud_matrix)
 #' 
-#' #2 Calculate overlap probability from 1000 random permutation.
-#' overlap <- boot_overlap(curtis, R = 1000, method = "PHR")
+#' #2 Calculate overlap probability from 6000 random permutation.
+#' overlap <- boot_overlap(ud_matrix, R = 6000, method = "PHR")
 #' 
 #' #3 Find the minimum sample size required to estimate the general distribution.
 #' a <- asymptote(overlap)
