@@ -15,7 +15,9 @@
 #' @export
 #' @details This function is a partial component of \code{\link{dupfilter}}, although works as a stand-alone function. 
 #' It looks for temporal duplicates and retains a fix with the highest quality index.
-#' @return The input data frame is returned with temporal duplicates removed by the quality index. 
+#' @return The input data frame is returned with temporal duplicates removed by the quality index.
+#' The following columns are added: "pTime", "sTime". 
+#' "pTime" and "sTime" are hours from a previous and to a subsequent fix respectively. 
 #' @author Takahiro Shimada
 #' @references Shimada T, Limpus C, Jones R, Hazel J, Groom R, Hamann M (2016) 
 #' Sea turtles return home after intentional displacement from coastal foraging areas. 
@@ -25,8 +27,9 @@
 
 
 dupfilter_qi <- function(sdata = sdata, step.time = 0){
+  
   ## Original columns
-  headers <- names(sdata)
+  # headers <- names(sdata)
   
   ## Original sample size
   OriginalSS <- nrow(sdata)
@@ -144,6 +147,8 @@ dupfilter_qi <- function(sdata = sdata, step.time = 0){
 
 
   #### Delete working columns and return the output
-  sdata <- sdata[,headers]
+  drop.vars <- c("pQI", "sQI", "pDist", "sDist", "pSpeed", "sSpeed", "inAng", "meanSpeed", "meanAngle")
+  sdata <- sdata[,!(names(sdata) %in% drop.vars)] 
+  # sdata <- sdata[,headers]
   return(sdata)
 }

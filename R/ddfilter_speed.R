@@ -39,7 +39,7 @@
 ddfilter_speed<-function (sdata, vmax=8.9, method=1){
   
   ## Original columns
-  headers <- names(sdata)
+  # headers <- names(sdata)
   
   ## Original sample size
   OriginalSS <- nrow(sdata)
@@ -113,7 +113,7 @@ ddfilter_speed<-function (sdata, vmax=8.9, method=1){
         # excluded.data[,c("pTime", "sTime", "pDist", "sDist", "pSpeed", "sSpeed", "overMax")]<-NA
         sdata <- plyr::rbind.fill(sdata, excluded.data)
       } else {
-        sdata<-sdata
+        sdata <- sdata
       }
     }
       
@@ -147,6 +147,8 @@ ddfilter_speed<-function (sdata, vmax=8.9, method=1){
 
   
   # Delete working columns and return the output
-  sdata3<-sdata3[,headers]
+  drop.vars <- c("overMax", "inAng", "meanSpeed", "meanAngle")
+  sdata3 <- sdata3[,!(names(sdata3) %in% drop.vars)] 
+  # sdata3$overMax <- NULL
   return(sdata3)
 }

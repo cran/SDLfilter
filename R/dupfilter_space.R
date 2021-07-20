@@ -24,7 +24,10 @@
 #' First it identifies spatial duplicates by searching for consecutive fixes that were located within \emph{step.dist}.
 #' For each group of spatial duplicates, the function then retains a single fix that is nearest from a previous and to a subsequent location.
 #' @note A minimum of two locations per id is required.
-#' @return The input data frame is returned with spatial duplicates removed. 
+#' @return The input data frame is returned with spatial duplicates removed.
+#' The following columns are added: "pTime", "sTime", "pDist", "sDist". 
+#' "pTime" and "sTime" are hours from a previous and to a subsequent fix respectively. 
+#' "pDist" and "sDist" are straight distances in kilometres from a previous and to a subsequent fix respectively. 
 #' @author Takahiro Shimada
 #' @references Shimada T, Limpus C, Jones R, Hazel J, Groom R, Hamann M (2016) 
 #' Sea turtles return home after intentional displacement from coastal foraging areas. 
@@ -35,7 +38,7 @@
 dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
   
   ## Original columns
-  headers <- names(sdata)
+  # headers <- names(sdata)
   
   ## Original sample size
   OriginalSS <- nrow(sdata)
@@ -238,6 +241,7 @@ dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
   
   
   #### Delete working columns and return the output
-  sdata<-sdata[,headers] 
+  drop.vars <- c("pSpeed", "sSpeed", "inAng", "meanSpeed", "meanAngle")
+  sdata <- sdata[,!(names(sdata) %in% drop.vars)] 
   return(sdata)
 }
