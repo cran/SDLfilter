@@ -14,11 +14,14 @@ asymptote(
   d2 = NA,
   threshold = 0.95,
   proportional = TRUE,
-  max.asymptote = 1
+  max.asymptote = 1,
+  estimator = "glm",
+  ci.level = 0.95,
+  ...
 )
 }
 \arguments{
-\item{data}{An output object from \code{\link{boot_overlap}} or \code{\link{boot_area}}.}
+\item{data}{An output object from \code{\link{boot_overlap}}, \code{\link{combn_overlap}}, or \code{\link{boot_area}}.}
 
 \item{x, y}{Numeric vectors of independent (x) and dependent (y) variables. 
 These parameters will be ignored if \emph{data} is supplied.}
@@ -43,6 +46,14 @@ If FALSE, the value specified in \emph{threshold} is used in the analysis.}
 
 \item{max.asymptote}{The maximum limit of an expected asymptote. Default is 1 (i.e. maximum probability). 
 If it is unknown, set as NA (e.g. max.asymptote = NA).}
+
+\item{estimator}{Method used to estimate the mean or predicted \emph{y} relative to \emph{x} (e.g. sample size).
+Available options are 'mean' using arithmetic means and 'glm' using the \code{\link[stats]{glm}} function.}
+
+\item{ci.level}{Confidence level for the mean or predicted \emph{y}, which will be used to assess if/when an asymptote has been reached.
+If NULL, only the mean and predicted \emph{y} are used for the assessment (see details).}
+
+\item{...}{Optional arguments passed to \code{\link[stats]{glm}}.}
 }
 \value{
 A list containing a data frame (rational function fit associated with x values), an estimated horizontal asymptote, 
@@ -53,11 +64,19 @@ Function to find horizontal asymptotes of a rational function.
 }
 \details{
 This function fits a rational function to the input data. 
-When an output object from \code{\link{boot_overlap}} or \code{\link{boot_area}} is supplied, 
-a rational function is fit to the means of the bootstrap results (e.g. mean overlap probability) as a function of \emph{x} (e.g. sample size).
+When an output object from \code{\link{boot_overlap}}, \code{\link{combn_overlap}} or \code{\link{boot_area}} is supplied, 
+a rational function is fit to the means or predicted values of the bootstrap results (e.g. mean overlap probability) 
+as a function of \emph{x} (e.g. sample size).
 It then estimates horizontal asymptotes and identifies the sample size when an asymptote is considered.
-Please caution when estimated horizontal asymptote is very different from the expected asymptote. 
-For example, the estimated horizontal asymptote should be around 1 if overlaps between UDs are calculated using the "PHR" method.
+If ci.level = NULL and threshold = 0.95, 
+an asymptote is considered when the mean or predicted y value reaches above 95% of the estimated horizontal asymptote.
+If ci.level is specified (e.g. 0.95) and threshold = 0.95,
+an asymptote is considered when the mean or predicted y value AND the confidence interval are above 95% of the estimated horizontal asymptote.
+When the "PHR" method was used in \code{\link{boot_overlap}}, 
+binomial is generally a sensible \code{\link[stats]{family}} object for the GLM.
+gaussian and Gamma are often good options when the maximum \emph{y} value exceeds 1 (e.g. area size).
+Please caution if estimated horizontal asymptote is very different from the expected asymptote. 
+For example, the estimated horizontal asymptote should be around 1 when overlaps between UDs are calculated using the "PHR" method.
 see \code{\link{boot_overlap}}.
 }
 \references{
@@ -69,7 +88,7 @@ Press, W. H., S. A. Teukolsky, W. T. Vetterling, and B. P. Flannery (2007).
 \emph{Numerical Recipes: The Art of Numerical Computing}. Third Edition, Cambridge University Press, New York.
 }
 \seealso{
-\code{\link{boot_overlap}}, \code{\link{boot_area}}
+\code{\link{boot_overlap}}, \code{\link{combn_overlap}}, \code{\link{boot_area}}
 }
 \author{
 Takahiro Shimada

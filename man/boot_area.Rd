@@ -23,7 +23,7 @@ that each RasterLayer has exactly the same geographical extent and resolution.}
 \item{cell.size}{A numeric value specifying the grid cell size of the input data in metres.}
 
 \item{R}{An integer specifying the number of iterations. A larger \emph{R} is required when the sample size is large. 
-R = sample size x 200 is often sufficient (e.g. R = 2000 for a sample size 10).}
+R > sample size x 100 is recommended (e.g. R > 1000 for a sample size 10).}
 
 \item{percent}{An integer specifying the percent volume of each UD to be considered in the analysis.}
 
@@ -41,26 +41,30 @@ This function calculates collective areas (e.g. 50\% UDs) of 1 to \emph{n} indiv
 \examples{
 \dontrun{
 
-#1 Utilisation distributions of flatback turtles (n = 29).
-data(ud_matrix)
+#1 Utilisation distributions of flatback turtles (n = 15).
+data(ud_raster)
 
-#2 Calculate collective areas from 6000 random permutation
-area <- boot_area(ud_matrix, R = 6000, percent = 50)
+#2 Calculate collective areas from 3000 random permutation
+area <- boot_area(ud_raster, R = 3000, percent = 50)
 
 #3 Find the minimum sample size required to estimate the general distribution.
-a <- asymptote(area)
+a <- asymptote(area, upper.degree = 10, estimator = 'glm', family = gaussian, max.asymptote = NA)
 
 #4 Plot the mean collective area and rational function fit relative to the sample sizes.
-ggplot(data = area$summary)+
-  geom_point(aes(x = N, y = mu/1e+6), alpha = 0.5) + 
-  geom_path(data = a$results, aes(x = x, y = ys/1e+6)) +        
-  labs(x = "N", y = expression(Area~(km^2)))
+ggplot(data = a$results, aes(x = x))+
+  geom_pointrange(aes(y = y, ymin = y_lwr, ymax = y_upr)) + 
+  geom_point(aes(y = y), size = 2) + 
+  scale_x_continuous(breaks = seq(0, 15, 3), limits = c(2,15), name = "Animals tracked (n)") +
+  scale_y_continuous(name = expression(Area~(km^2)))
 }
 }
 \references{
 Shimada T, Thums M, Hamann M, Limpus CJ, Hays GC, FitzSimmons N, Wildermann NE, Duarte CD, Meekan MG (2021) 
 Optimising sample sizes for animal distribution analysis using tracking data. 
 \emph{Methods in Ecology and Evolution} 12(2):288-297 \doi{10.1111/2041-210X.13506}
+}
+\seealso{
+\code{\link{boot_overlap}}, \code{\link{combn_overlap}}
 }
 \author{
 Takahiro Shimada
