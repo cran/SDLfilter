@@ -1,4 +1,4 @@
-#' @aliases map_track
+#' @aliases to_map
 #' @title Plot location data on a map
 #' @description Function to plot tracking data on a map or a satellite image. 
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon". 
@@ -68,22 +68,22 @@
 #' 
 #' #### Plot filtered data for each animal
 #' ## using the low-resolution world map
-#' map_track(turtle.dd, point.size = 2, line.size = 0.5, axes.lab.size = 0, ncol=2, nrow=1)
+#' to_map(turtle.dd, point.size = 2, line.size = 0.5, axes.lab.size = 0, ncol=2, nrow=1)
 #'
 #'\dontrun{
 #' ## using the high-resolution google satellite images
-#' map_track(turtle.dd, bgmap = "satellite", google.key = "key", ncol=2)
+#' to_map(turtle.dd, bgmap = "satellite", google.key = "key", ncol=2)
 #'}
 
 
 #### Plot data removed or retained by ddfilter
-map_track<-function(sdata, xlim=NULL, ylim=NULL, margin=10, 
-                   bgmap=NULL, google.key=NULL, map.bg="grey", map.col="black", zoom=NULL, 
-                   point.bg="yellow", point.col="black", point.symbol=21, point.size=1,
-                   line.col="lightgrey", line.type=1, line.size=0.5,
-                   sb.distance=NULL, sb.lwd=1, sb.line.col="black", sb.text.size=4, sb.text.col="black", sb.space=3,
-                   title="id", title.size=11, axes.text.size=11, axes.lab.size=11,
-                   multiplot=TRUE, nrow=1, ncol=1){
+to_map <- function(sdata, xlim=NULL, ylim=NULL, margin=10, 
+                    bgmap=NULL, google.key=NULL, map.bg="grey", map.col="black", zoom=NULL, 
+                    point.bg="yellow", point.col="black", point.symbol=21, point.size=1,
+                    line.col="lightgrey", line.type=1, line.size=0.5,
+                    sb.distance=NULL, sb.lwd=1, sb.line.col="black", sb.text.size=4, sb.text.col="black", sb.space=3,
+                    title="id", title.size=11, axes.text.size=11, axes.lab.size=11,
+                    multiplot=TRUE, nrow=1, ncol=1){
   
   #### Get data to plot
   ID <- as.character(unique(sdata$id))
@@ -142,14 +142,14 @@ map_track<-function(sdata, xlim=NULL, ylim=NULL, margin=10,
         map.data<-ggmap::get_map(location = c(lon = mean(xlim), lat = mean(ylim)), 
                                  color = "color", source = "google", maptype = bgmap, 
                                  zoom = zm)
-
+        
       } else {
         map.data<-ggmap::get_map(location = c(lon = mean(xlim), lat = mean(ylim)), 
                                  color = "color", source = "google", maptype = bgmap, zoom=zoom)
       }
       
       p <- ggmap::ggmap(map.data)  
-
+      
     } else {
       map.data<-bgmap
       p <-ggplot(data=sdata.temp)+
@@ -195,7 +195,7 @@ map_track<-function(sdata, xlim=NULL, ylim=NULL, margin=10,
     
     sb<-ggsn::scalebar(x.min=xlim[1]+extra2, x.max=xlim[2]-extra2, y.min=ylim[1]+extra2, y.max=ylim[2]-extra2,
                        dist = sb.distance, dist_unit = "km", transform = TRUE, model = 'WGS84', location="bottomleft", st.dist=.03)
-      
+    
     sb.xmin<-min(sb[[1]]$data$x); sb.xmax<-max(sb[[1]]$data$x)
     sb.ymin<-min(sb[[1]]$data$y); sb.ymax<-max(sb[[1]]$data$y)
     
@@ -213,4 +213,4 @@ map_track<-function(sdata, xlim=NULL, ylim=NULL, margin=10,
     p.all
   }
 }
- 
+

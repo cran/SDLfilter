@@ -16,9 +16,11 @@
 #' Default is 0 kilometres. 
 #' @param conditional If TRUE, spatial duplicates are filtered only if they are less than or equal to \emph{step.time} apart. 
 #' Default is FALSE.
-#' @import sp
-#' @importFrom raster pointDistance
-#' @importFrom plyr rbind.fill
+#' @param no.cores An integer specifying the number of cores used for parallel computing. 
+#' Alternatively, type in 'detect' to use the maximum number of available cores minus one.
+#' @importFrom sf st_as_sf st_distance
+#' @importFrom dplyr bind_rows
+#' @importFrom parallel makeCluster detectCores parLapply stopCluster
 #' @export
 #' @details This function is a partial component of \code{\link{dupfilter}}, although works as a stand-alone function.
 #' First it identifies spatial duplicates by searching for consecutive fixes that were located within \emph{step.dist}.
@@ -35,24 +37,25 @@
 #' @seealso \code{\link{dupfilter}}, \code{\link{dupfilter_exact}}, \code{\link{dupfilter_time}}, \code{\link{dupfilter_qi}}, \code{\link{track_param}}
 
 
-dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
-  
-  ## Original columns
-  # headers <- names(sdata)
+dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE, no.cores = 1){
   
   ## Original sample size
   OriginalSS <- nrow(sdata)
   
   ## qi format
-  sdata <- within(sdata, {
-    qi[qi %in% "A"] <- "-1"
-    qi[qi %in% "B"] <- "-2"
-    qi[qi %in% "Z"] <- "-3"
-    qi <- as.numeric(as.character(qi))
-  })
+  if(!is.numeric(sdata$qi)){
+    sdata <- within(sdata, {
+      qi[qi %in% "A"] <- "-1"
+      qi[qi %in% "B"] <- "-2"
+      qi[qi %in% "Z"] <- "-3"
+      qi <- as.numeric(as.character(qi))
+    })
+  }
   
   ## Date & time
-  sdata$DateTime <- with(sdata, as.POSIXct(DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT"))
+  if(!any(class(sdata$DateTime) %in% "POSIXct")){
+    sdata$DateTime <- with(sdata, as.POSIXct(DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT"))
+  }
   
   
   ## Get movement parameters
@@ -70,21 +73,23 @@ dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
 
       #### Group temporal duplicates
       sdata1 <- track_param(sdata1, param = 'distance')
-      index <- 0
+      index <- 0; g <- rep(0, nrow(sdata1))
       for(i in 1:nrow(sdata1)){
         if(any(is.na(sdata1[i, 'pDist']) | sdata1[i, 'sDist'] == 0, na.rm = TRUE)){
           index <- index + 1
-          sdata1[i, 'group'] <- index
-        } else {
-          sdata1[i, 'group'] <- index
-        }
+        } 
+        g[i] <- index
       }
+      sdata1$group <- g
+      rm(g, index)
+      
       
       #### Filter successive locations with exactly same coordinates
       sdata1 <- dplyr::distinct(sdata1, .data$id, .data$lat, .data$lon, .data$group, .keep_all = TRUE)
       
       #### Combine
-      sdata <- plyr::rbind.fill(sdata1, sdata2)
+      sdata <- dplyr::bind_rows(sdata1, sdata2)
+      rm(sdata1, sdata2)
       
       #### Recalculate movement parameters
       sdata <- track_param(sdata, param = c('time', 'distance'))
@@ -99,21 +104,23 @@ dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
       
       #### Group temporal duplicates
       sdata1 <- track_param(sdata1, param = 'distance')
-      index <- 0
+      index <- 0; g <- rep(0, nrow(sdata1))
       for(i in 1:nrow(sdata1)){
         if(any(is.na(sdata1[i, 'pDist']) | sdata1[i, 'sDist'] == 0, na.rm = TRUE)){
           index <- index + 1
-          sdata1[i, 'group'] <- index
-        } else {
-          sdata1[i, 'group'] <- index
-        }
+        } 
+        g[i] <- index
       }
+      sdata1$group <- g
+      rm(g, index)
+      
       
       #### Filter successive locations with exactly same coordinates
       sdata1 <- dplyr::distinct(sdata1, .data$id, .data$lat, .data$lon, .data$group, .keep_all = TRUE)
       
       #### Combine
-      sdata <- plyr::rbind.fill(sdata1, sdata2)
+      sdata <- dplyr::bind_rows(sdata1, sdata2)
+      rm(sdata1, sdata2)
       
       #### Recalculate movement parameters
       sdata <- track_param(sdata, param = c('time', 'distance'))
@@ -122,7 +129,7 @@ dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
   
   
   #### Function to filter spatial duplicates of different coordinates
-  dup.location <- function(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional){
+  dup.location <- function(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional, no.cores = no.cores){
 
     #### Subset data 
     ## temporal duplicates
@@ -138,35 +145,45 @@ dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
     
     #### Group temporal duplicates
     sdata1 <- track_param(sdata1, param = 'distance')
-    index <- 0
+    index <- 0; g <- rep(0, nrow(sdata1))
     for(i in 1:nrow(sdata1)){
       if(any(is.na(sdata1[i, 'pDist']) | (sdata1[i, 'sDist'] <= step.dist), na.rm = TRUE)){
         index <- index + 1
-        sdata1[i, 'group'] <- index
-      } else {
-        sdata1[i, 'group'] <- index
-      }
+      } 
+      g[i] <- index
     }
+    sdata1$group <- g
+    rm(g, index)
+    
     
     ## group with more than 1 locations
     nloc <- aggregate(lat ~ group, data = sdata1, FUN = length)
     nloc_gp <- unique(nloc[nloc$lat>1, 'group'])
     sdata3 <- with(sdata1, sdata1[!group %in% nloc_gp,])
     sdata1 <- with(sdata1, sdata1[group %in% nloc_gp,])
-    
+    nloc_gp1 <- unique(sdata1$group)
+    rm(nloc, nloc_gp)
    
     #### Find the location which is the closest to the previous and/or successive locations
-    sdata1 <- plyr::rbind.fill(lapply(nloc_gp, function(i){
+    ## function to plug in
+    select_rows <- function(i){
       dup_temp <- with(sdata1, sdata1[group %in% i,])
       minDT <- min(dup_temp$DateTime)
       maxDT <- max(dup_temp$DateTime)
       dup_id <- unique(dup_temp$id)
+      # dup_xy <- data.matrix(dup_temp[,c('lon', 'lat')])
+      # dup_xy <- st_as_sf(dup_temp, coords = c('lon', 'lat'), crs = 4326)
+      dup_xy <- dup_temp[, c('lon', 'lat')]
+      dup_xy <- sf::st_as_sf(dup_xy, coords = 1:2, crs = 4326)
       
       ## locations immediately before
       loc.before <- with(sdata, sdata[id %in% dup_id & DateTime < minDT,])
       if(nrow(loc.before) > 0){
         maxDT_before <- max(loc.before$DateTime)
-        loc.before <- loc.before[loc.before$DateTime >= maxDT_before,]
+        # loc.before <- loc.before[loc.before$DateTime >= maxDT_before,]
+        # loc.before_xy <- data.matrix(loc.before[,c('lon', 'lat')])
+        loc.before <- loc.before[loc.before$DateTime >= maxDT_before, c('lon', 'lat')]
+        loc.before_xy <- sf::st_as_sf(loc.before, coords = 1:2, crs = 4326)
       }
       
       ## locations immediately after
@@ -174,22 +191,34 @@ dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
       if(nrow(loc.after) > 0){
         minDT_after <- min(loc.after$DateTime)
         loc.after <- loc.after[loc.after$DateTime <= minDT_after,]
+        # loc.after_xy <- data.matrix(loc.after[,c('lon', 'lat')])
+        # loc.after_xy <-st_as_sf(loc.after, coords = c('lon', 'lat'), crs = 4326)
+        loc.after <- loc.after[loc.after$DateTime <= minDT_after, c('lon', 'lat')]
+        loc.after_xy <- sf::st_as_sf(loc.after, coords = 1:2, crs = 4326)
       }
       
       
       #### Calculate distances
       if(nrow(loc.before) > 0 & nrow(loc.after) > 0){
-        dist.before <- raster::pointDistance(dup_temp[,c('lon', 'lat')], loc.before[,c('lon', 'lat')], lonlat = TRUE, allpairs = TRUE)
-        dist.after <- raster::pointDistance(dup_temp[,c('lon', 'lat')], loc.after[,c('lon', 'lat')], lonlat = TRUE, allpairs = TRUE)
+        # dist.before <- raster::pointDistance(dup_temp[,c('lon', 'lat')], loc.before[,c('lon', 'lat')], lonlat = TRUE, allpairs = TRUE)
+        # dist.after <- raster::pointDistance(dup_temp[,c('lon', 'lat')], loc.after[,c('lon', 'lat')], lonlat = TRUE, allpairs = TRUE)
+        dist.before <- sf::st_distance(dup_xy, loc.before_xy)
+        dist.after <- sf::st_distance(dup_xy, loc.after_xy)
+        # dist.before <- terra::distance(dup_xy, loc.before_xy, lonlat = TRUE)
+        # dist.after <- terra::distance(dup_xy, loc.after_xy, lonlat = TRUE)
         dist.all <- cbind(dist.before, dist.after)
         dist.sum <- rowSums(dist.all)
         dist.min <- which.min(dist.sum)[1]
       } else if(nrow(loc.before) > 0){
-        dist.before <- raster::pointDistance(dup_temp[,c('lon', 'lat')], loc.before[,c('lon', 'lat')], lonlat = TRUE, allpairs = TRUE)
+        # dist.before <- raster::pointDistance(dup_temp[,c('lon', 'lat')], loc.before[,c('lon', 'lat')], lonlat = TRUE, allpairs = TRUE)
+        # dist.before <- terra::distance(dup_xy, loc.before_xy, lonlat = TRUE)
+        dist.before <- sf::st_distance(dup_xy, loc.before_xy)
         dist.sum <- rowSums(as.matrix(dist.before))
         dist.min <- which.min(dist.sum)[1]
       } else if(nrow(loc.after) > 0){
-        dist.after <- raster::pointDistance(dup_temp[,c('lon', 'lat')], loc.after[,c('lon', 'lat')], lonlat = TRUE, allpairs = TRUE)
+        # dist.after <- raster::pointDistance(dup_temp[,c('lon', 'lat')], loc.after[,c('lon', 'lat')], lonlat = TRUE, allpairs = TRUE)
+        # dist.after <- terra::distance(dup_xy, loc.after_xy, lonlat = TRUE)
+        dist.after <- sf::st_distance(dup_xy, loc.after_xy)
         dist.sum <- rowSums(as.matrix(dist.after))
         dist.min <- which.min(dist.sum)[1]
       } else {
@@ -198,12 +227,25 @@ dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
       
       #### Return the location which is the closest to the previous and successive locations
       return(dup_temp[dist.min,])
-    }))
+    }
     
+    
+    ## Run the function
+    if(no.cores > 1){
+      # using multiple CPU cores
+      d <- parallel::parLapply(cl, X = nloc_gp1, fun = select_rows)
+    } else {
+      # using a single CPU
+      d <- lapply(nloc_gp1, select_rows)
+    }
+    sdata1 <- dplyr::bind_rows(d)
+    rm(d)
+
     
     #### Combine
-    sdata <- plyr::rbind.fill(sdata1, sdata2, sdata3)
+    sdata <- dplyr::bind_rows(sdata1, sdata2, sdata3)
     sdata$group <- NULL
+    rm(sdata1, sdata2, sdata3)
     
     ## Re-calculate
     sdata <- track_param(sdata, param = c('time', 'distance'))
@@ -214,26 +256,47 @@ dupfilter_space <- function(sdata, step.time=0, step.dist=0, conditional=FALSE){
   
   
   #### Run the function until no locations can be removed by this filter
+  ## set parameters for parallel processing
+  if(no.cores > 1 | no.cores %in% 'detect'){
+    
+    if(no.cores %in% 'detect'){
+      no.cores <- parallel::detectCores() - 1
+    }
+    
+    if(.Platform$OS.type %in% 'windows'){
+      cl <- parallel::makeCluster(no.cores, type="PSOCK")
+    } else {
+      cl <- parallel::makeCluster(no.cores, type="FORK")
+    }
+  }
+  
+  
+  ## run the function
   if(isTRUE(conditional)){
     if(any(sdata$pTime <= step.time & sdata$pDist <= step.dist, na.rm = TRUE)){
-      sdata <- dup.location(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional)    
+      sdata <- dup.location(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional, no.cores = no.cores)    
       while(any(sdata$pTime <= step.time & sdata$pDist <= step.dist, na.rm = TRUE)){
-        sdata <- dup.location(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional)
+        sdata <- dup.location(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional, no.cores = no.cores)
       }
     }
   } else {
     if(any(sdata$pDist <= step.dist, na.rm = TRUE)){
-      sdata <- dup.location(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional)    
+     sdata <- dup.location(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional, no.cores = no.cores)    
       while(any(sdata$pDist <= step.dist, na.rm = TRUE)){
-        sdata <- dup.location(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional)
+        sdata <- dup.location(sdata=sdata, step.time=step.time, step.dist=step.dist, conditional=conditional, no.cores = no.cores)
       }
     }
   }
-
+  
+  ## stop parallel
+  if(no.cores > 1){
+    parallel::stopCluster(cl)
+  }
+  
  
   ## Filtered data
-  FilteredSS<-nrow(sdata)
-  RemovedSamplesN<-OriginalSS-FilteredSS
+  FilteredSS <- nrow(sdata)
+  RemovedSamplesN <- OriginalSS-FilteredSS
   
   
   ## Print report

@@ -1,7 +1,7 @@
 #' @aliases vmaxlp
 #' @title Estimate maximum one-way linear speed of a loop trip
 #' @description Function to estimate the maximum one-way linear speed of a loop trip as described in 
-#' \href{http://www.int-res.com/abstracts/meps/v457/p171-180/}{Shimada et al. (2012)}.
+#' \href{https://www.int-res.com/abstracts/meps/v457/p171-180/}{Shimada et al. (2012)}.
 #' @param sdata A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
 #' See the data \code{\link{turtle}} for an example.
 #' The function filters the input data by a unique "id" (e.g. transmitter number, identifier for each animal). 
@@ -16,13 +16,11 @@
 #' Default is 4 (e.g. 4 GPS satellite or more).
 #' @param prob A numeric value to specify a sample quantile. Default is 0.99.
 #' @param ... Extra arguments passed to \code{\link{dupfilter}}.
-#' @import sp
-#' @importFrom raster pointDistance
 #' @importFrom stats quantile
 #' @export
 #' @details The function first detects a "loop trip". 
 #' Loop trip behaviour is represented by spatial departure and return involving more than 3 consecutive locations 
-#' \href{http://www.int-res.com/abstracts/meps/v457/p171-180/}{(Shimada et al. 2012)}. 
+#' \href{https://www.int-res.com/abstracts/meps/v457/p171-180/}{(Shimada et al. 2012)}. 
 #' The function calculates the net (i.e. straight-line) distance between the departure and turning point as well as 
 #' the turning point and return location of a loop trip. 
 #' It then calculates the one-way travelling speed to or from each turning point for each loop trip. 
@@ -87,7 +85,7 @@ vmaxlp<-function(sdata, qi=4, prob=0.99, ...){
     }
   }
   
-  # Apply the above funtion to each data set seperately
+  # Apply the above function to each data set separately
   straight.group<-function(j){
     start<-as.numeric(rownames(sdata[sdata$id %in% j,][4,]))
     end<-as.numeric(rownames(sdata[sdata$id %in% j,][1,]))+(nrow(sdata[sdata$id %in% j,])-4)
@@ -111,7 +109,7 @@ vmaxlp<-function(sdata, qi=4, prob=0.99, ...){
   }
   
   
-  # Apply the above funtion to each data set seperately
+  # Apply the above function to each data set separately
   start.straight.group<-function(j){
     start<-as.numeric(rownames(sdata[sdata$id %in% j,][2,]))
     end<-as.numeric(rownames(sdata[sdata$id %in% j,][1,]))+(nrow(sdata[sdata$id %in% j,])-2)

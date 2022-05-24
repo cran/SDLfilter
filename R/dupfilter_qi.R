@@ -11,7 +11,7 @@
 #' The greater number indicates a higher accuracy. 
 #' @param step.time Consecutive locations less than or equal to \emph{step.time} apart are considered temporal duplicates.
 #' Default is 0 hours.
-#' @importFrom plyr rbind.fill
+#' @importFrom dplyr bind_rows
 #' @export
 #' @details This function is a partial component of \code{\link{dupfilter}}, although works as a stand-alone function. 
 #' It looks for temporal duplicates and retains a fix with the highest quality index.
@@ -28,22 +28,23 @@
 
 dupfilter_qi <- function(sdata = sdata, step.time = 0){
   
-  ## Original columns
-  # headers <- names(sdata)
-  
   ## Original sample size
   OriginalSS <- nrow(sdata)
   
   ## qi format
-  sdata <- within(sdata, {
-    qi[qi %in% "A"] <- "-1"
-    qi[qi %in% "B"] <- "-2"
-    qi[qi %in% "Z"] <- "-3"
-    qi <- as.numeric(as.character(qi))
-  })
+  if(!is.numeric(sdata$qi)){
+    sdata <- within(sdata, {
+      qi[qi %in% "A"] <- "-1"
+      qi[qi %in% "B"] <- "-2"
+      qi[qi %in% "Z"] <- "-3"
+      qi <- as.numeric(as.character(qi))
+    })
+  }
   
   ## Date & time
-  sdata$DateTime <- with(sdata, as.POSIXct(DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT"))
+  if(!any(class(sdata$DateTime) %in% "POSIXct")){
+    sdata$DateTime <- with(sdata, as.POSIXct(DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT"))
+  }
   
   
   #### Prepare data for filtering
@@ -51,9 +52,10 @@ dupfilter_qi <- function(sdata = sdata, step.time = 0){
   
   ## Sort data in alphabetical and chronological order
   sdata <- with(sdata, sdata[order(id, DateTime),])
-
+  
+  
   ## lagged date and time
-  sdata <- plyr::rbind.fill(lapply(IDs, function(j){
+  sdata <- dplyr::bind_rows(lapply(IDs, function(j){
     sdata.temp <- sdata[sdata$id %in% j,]
     timeDiff <- diff(sdata.temp$DateTime)
     units(timeDiff) <- "hours"
@@ -62,17 +64,17 @@ dupfilter_qi <- function(sdata = sdata, step.time = 0){
     sdata.temp$pQI <- c(NA, sdata.temp$qi[-nrow(sdata.temp)])
     sdata.temp$sQI <- c(sdata.temp$qi[-1], NA)
     return(sdata.temp)
-  })) 
+  }))
 
 
   #### Function to filter data by quality index
   dup.qi <- function(sdata = sdata, step.time = step.time){
     ## Extract data within step.time AND different qi
     sdata1 <- with(sdata, sdata[which((pTime <= step.time & qi != pQI) | (sTime <= step.time & qi != sQI)),])
-
+    
     ## Other data
     if(nrow(sdata1)>0){
-       sdata2 <- dplyr::anti_join(sdata, sdata1, by = c('id', 'DateTime', 'lat', 'lon', 'qi'))
+      sdata2 <- dplyr::anti_join(sdata, sdata1, by = c('id', 'DateTime', 'lat', 'lon', 'qi'))
     } else {
       sdata2 <- sdata 
     }
@@ -80,15 +82,15 @@ dupfilter_qi <- function(sdata = sdata, step.time = 0){
     
     #### Group temporal duplicates
     sdata1 <- track_param(sdata1, param = 'time')
-    index <- 0
+    index <- 0; g <- rep(0, nrow(sdata1))
     for(i in 1:nrow(sdata1)){
       if(any(is.na(sdata1[i, 'pTime']) | (sdata1[i, 'sTime'] <= step.time), na.rm = TRUE)){
         index <- index + 1
-        sdata1[i, 'group'] <- index
-      } else {
-        sdata1[i, 'group'] <- index
-      }
+      } 
+      g[i] <- index
     }
+    sdata1$group <- g
+
     
     ## group with more than 1 locations
     nloc <- aggregate(lat ~ group, data = sdata1, FUN = length)
@@ -99,21 +101,22 @@ dupfilter_qi <- function(sdata = sdata, step.time = 0){
     ## Sort data by id, time and quality index
     sdata1 <- with(sdata1, sdata1[order(qi, decreasing = TRUE),])
     sdata1 <- with(sdata1, sdata1[order(group),])
-
+    
     
     #### Filter temporal duplicates by quality index
     sdata1 <- dplyr::distinct(sdata1, .data$group, .keep_all = TRUE)
     
-
+    
     #### Bring back the excluded data
-    sdata <- plyr::rbind.fill(sdata1, sdata2, sdata3)
+    sdata <- dplyr::bind_rows(sdata1, sdata2, sdata3)
     sdata$group <- NULL
     
     #### Reorganise
     sdata <- with(sdata, sdata[order(id, DateTime),])
+    IDs <- levels(factor(sdata$id))
 
     ## lagged date and time
-    sdata <- plyr::rbind.fill(lapply(IDs, function(j){
+    sdata <- dplyr::bind_rows(lapply(IDs, function(j){
       sdata.temp <- sdata[sdata$id %in% j,]
       timeDiff <- diff(sdata.temp$DateTime)
       units(timeDiff) <- "hours"
@@ -122,8 +125,7 @@ dupfilter_qi <- function(sdata = sdata, step.time = 0){
       sdata.temp$pQI <- c(NA, sdata.temp$qi[-nrow(sdata.temp)])
       sdata.temp$sQI <- c(sdata.temp$qi[-1], NA)
       return(sdata.temp)
-    })) 
-    
+    }))
     return(sdata)
   }
 
@@ -135,8 +137,7 @@ dupfilter_qi <- function(sdata = sdata, step.time = 0){
       sdata <- dup.qi(sdata=sdata, step.time=step.time)
     }
   }
-  
-  
+
   #### Report the summary of filtering
   ## Filtered data
   FilteredSS<-nrow(sdata)
@@ -149,6 +150,152 @@ dupfilter_qi <- function(sdata = sdata, step.time = 0){
   #### Delete working columns and return the output
   drop.vars <- c("pQI", "sQI", "pDist", "sDist", "pSpeed", "sSpeed", "inAng", "meanSpeed", "meanAngle")
   sdata <- sdata[,!(names(sdata) %in% drop.vars)] 
-  # sdata <- sdata[,headers]
   return(sdata)
 }
+
+
+
+# dupfilter_qi2 <- function(sdata = sdata, step.time = 0){
+# 
+#   ## Original sample size
+#   OriginalSS <- nrow(sdata)
+# 
+# 
+#   ## Convert to list
+#   if(class(sdata) == 'data.frame'){
+# 
+#     ## Get the number of data groups
+#     IDs <- levels(factor(sdata$id))
+# 
+#     ## convert to list
+#     sdata_list <- lapply(IDs, function(j){
+#       sdata[sdata$id %in% j,]
+#     })
+#   } else {
+#     sdata_list <- sdata
+#   }
+# 
+#   n <- length(sdata_list)
+# 
+# 
+#   ## organise data
+#   for(i in 1:n){
+# 
+#     ## qi format
+#     sdata_list[[i]] <- within(sdata_list[[i]], {
+#       qi[qi %in% "A"] <- "-1"
+#       qi[qi %in% "B"] <- "-2"
+#       qi[qi %in% "Z"] <- "-3"
+#       qi <- as.numeric(as.character(qi))
+# 
+#       ## Date & time
+#       DateTime <- as.POSIXct(DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT")
+#     })
+# 
+#     ## Sort data in chronological order
+#     sdata_list[[i]] <- with(sdata_list[[i]], sdata_list[[i]][order(DateTime),])
+# 
+#     ## lagged date and time
+#     timeDiff <- diff(sdata_list[[i]]$DateTime)
+#     units(timeDiff) <- "hours"
+#     sdata_list[[i]]$pTime <- c(NA, as.numeric(timeDiff))
+#     sdata_list[[i]]$sTime <- c(as.numeric(timeDiff), NA)
+#     sdata_list[[i]]$pQI <- c(NA, sdata_list[[i]]$qi[-nrow(sdata_list[[i]])])
+#     sdata_list[[i]]$sQI <- c(sdata_list[[i]]$qi[-1], NA)
+#   }
+# 
+# 
+#   #### Function to filter data by quality index
+#   dup.qi <- function(sdata = sdata, step.time = step.time){
+#     ## Extract data within step.time AND different qi
+#     sdata1 <- with(sdata, sdata[which((pTime <= step.time & qi != pQI) | (sTime <= step.time & qi != sQI)),])
+#     
+#     ## Other data
+#     if(nrow(sdata1)>0){
+#       sdata2 <- dplyr::anti_join(sdata, sdata1, by = c('id', 'DateTime', 'lat', 'lon', 'qi'))
+#     } else {
+#       sdata2 <- sdata 
+#     }
+#     
+#     
+#     #### Group temporal duplicates
+#     sdata1 <- track_param(sdata1, param = 'time')
+#     index <- 0; g <- rep(0, nrow(sdata1))
+#     for(i in 1:nrow(sdata1)){
+#       if(any(is.na(sdata1[i, 'pTime']) | (sdata1[i, 'sTime'] <= step.time), na.rm = TRUE)){
+#         index <- index + 1
+#       } 
+#       g[i] <- index
+#     }
+#     sdata1$group <- g
+#     
+#     
+#     ## group with more than 1 locations
+#     nloc <- aggregate(lat ~ group, data = sdata1, FUN = length)
+#     nloc_gp <- unique(nloc[nloc$lat>1, 'group'])
+#     sdata3 <- with(sdata1, sdata1[!group %in% nloc_gp,])
+#     sdata1 <- with(sdata1, sdata1[group %in% nloc_gp,])
+#     
+#     ## Sort data by id, time and quality index
+#     sdata1 <- with(sdata1, sdata1[order(qi, decreasing = TRUE),])
+#     sdata1 <- with(sdata1, sdata1[order(group),])
+#     
+#     
+#     #### Filter temporal duplicates by quality index
+#     sdata1 <- dplyr::distinct(sdata1, .data$group, .keep_all = TRUE)
+#     
+#     
+#     #### Bring back the excluded data
+#     sdata <- dplyr::bind_rows(sdata1, sdata2, sdata3)
+#     sdata$group <- NULL
+#     
+#     #### Reorganise
+#     sdata <- with(sdata, sdata[order(id, DateTime),])
+#     IDs <- levels(factor(sdata$id))
+#     
+#     ## lagged date and time
+#     sdata <- dplyr::bind_rows(lapply(IDs, function(j){
+#       sdata.temp <- sdata[sdata$id %in% j,]
+#       timeDiff <- diff(sdata.temp$DateTime)
+#       units(timeDiff) <- "hours"
+#       sdata.temp$pTime <- c(NA, as.numeric(timeDiff))
+#       sdata.temp$sTime <- c(as.numeric(timeDiff), NA)
+#       sdata.temp$pQI <- c(NA, sdata.temp$qi[-nrow(sdata.temp)])
+#       sdata.temp$sQI <- c(sdata.temp$qi[-1], NA)
+#       return(sdata.temp)
+#     }))
+#     return(sdata)
+#   }
+# 
+# 
+#   #### Repeat the function until no locations can be removed by this filter
+#   for(i in 1:length(sdata_list)){
+#     if(any((sdata_list[[i]]$pTime <= step.time & sdata_list[[i]]$qi != sdata_list[[i]]$pQI) |
+#            (sdata_list[[i]]$sTime <= step.time & sdata_list[[i]]$qi != sdata_list[[i]]$sQI), na.rm = TRUE)){
+# 
+#       sdata_list[[i]] <- dup.qi(sdata = sdata_list[[i]], step.time=step.time)
+# 
+#       while(any((sdata_list[[i]]$pTime <= step.time & sdata_list[[i]]$qi != sdata_list[[i]]$pQI) |
+#                 (sdata_list[[i]]$sTime <= step.time & sdata_list[[i]]$qi != sdata_list[[i]]$sQI), na.rm = TRUE)){
+# 
+#         sdata_list[[i]] <- dup.qi(sdata = sdata_list[[i]], step.time=step.time)
+# 
+#       }
+#     }
+#   }
+# 
+# 
+#   #### Report the summary of filtering
+#   ## Filtered data
+#   FilteredSS<-nrow(sdata)
+#   RemovedSamplesN<-OriginalSS-FilteredSS
+# 
+#   ## Print report
+#   cat("dupfilter_qi removed", RemovedSamplesN, "of", OriginalSS, "locations", fill = TRUE)
+# 
+# 
+#   #### Delete working columns and return the output
+#   drop.vars <- c("pQI", "sQI", "pDist", "sDist", "pSpeed", "sSpeed", "inAng", "meanSpeed", "meanAngle")
+#   sdata <- sdata[,!(names(sdata) %in% drop.vars)]
+#   return(sdata)
+# }

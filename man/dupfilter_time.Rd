@@ -4,7 +4,7 @@
 \alias{dupfilter_time}
 \title{Filter temporal duplicates}
 \usage{
-dupfilter_time(sdata, step.time = 0)
+dupfilter_time(sdata, step.time = 0, no.cores = 1)
 }
 \arguments{
 \item{sdata}{A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
@@ -20,6 +20,9 @@ The greater number indicates a higher accuracy.}
 
 \item{step.time}{Consecutive locations less than or equal to \emph{step.time} apart are considered temporal duplicates.
 Default is 0 hours.}
+
+\item{no.cores}{An integer specifying the number of cores used for parallel computing. 
+Alternatively, type in 'detect' to use the maximum number of available cores minus one.}
 }
 \value{
 The input data frame is returned with temporal duplicates removed.
