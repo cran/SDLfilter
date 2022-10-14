@@ -8,6 +8,14 @@ output:
 News for Package 'SDLfilter'
 =========
 
+#### Version 2.3.0 (2022-10-11)
+
+* improved the estimation of vmax of vmaxlp by implementing Maximum Likelihood estimation.
+* fixed minor bugs in the ddfilter, dupfilter and track_param functions.
+* reinstated the kml_track function as the dependent package (plotKML) has been reinstated to the CRAN repository.
+* added a new function to_kmz, which generates KMZ from locations and track.
+
+
 #### Version 2.2.1 (2022-05-15)
 
 * added a parallel computing option to the dupfilter_time, dupfilter_space, and dupfilter functions.

@@ -2,9 +2,9 @@
 % Please edit documentation in R/vmax.R
 \name{vmax}
 \alias{vmax}
-\title{Estimate maximum linear speed}
+\title{Maximum linear speed}
 \usage{
-vmax(sdata, qi = 5, prob = 0.99, ...)
+vmax(sdata, qi = 5, method = "ML", prob = 0.99, ...)
 }
 \arguments{
 \item{sdata}{A data frame containing columns with the following headers: "id", "DateTime", "lat", "lon", "qi". 
@@ -21,7 +21,12 @@ The greater number indicates a higher accuracy.}
 \item{qi}{An integer specifying the lowest quality index of a location that is qualified to be used in the estimation. 
 Default is 5 (e.g. 5 GPS satellite or more).}
 
-\item{prob}{A numeric value to specify a sample quantile. Default is 0.99.}
+\item{method}{Available options are "sample" (i.e. sample quantile - see \code{\link[stats:quantile]{quantile}})
+and "ML" (maximum likelihood estimation - see details). Default is "ML".}
+
+\item{prob}{A quantile value (0 to 1). 
+This value specifies the upper limit of a sample quantile or a probability distribution of linear speed, 
+from which maximum linear speed is determined. Default is 0.99. See details.}
 
 \item{...}{Extra arguments passed to \code{\link{dupfilter}}.}
 }
@@ -33,8 +38,12 @@ Function to estimate the maximum linear speed between two consecutive locations.
 }
 \details{
 The function first calculates the linear speed between each pair of two consecutive locations. 
-It then discards extreme values, based on the specified quantile, to exclude potential outliers from the estimation process. 
-The maximum value in the retained dataset (i.e. without outliers) represents the maximum linear speed at which 
+Some of the calculated linear speed can be inaccurate when input data contains inaccurate locations (e.g. outliers).
+To exclude implausible outliers, the function discards extreme values based on the specified quantile or 
+an estimated probability distribution for the loop trip speed, depending on the selected \emph{method}. 
+If the "ML" method is selected, a Gamma distribution is assumed and the shape and scale parameters are estimated via maximum likelihood estimation 
+using the \code{\link[stats:optim]{optim}} function. 
+The maximum value within a given probability range (e.g. 0.99) represents the maximum linear speed at which 
 an animal would travel between two consecutive locations.
 }
 \references{

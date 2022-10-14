@@ -189,13 +189,13 @@ overlap <- boot_overlap(ud_matrix, R = 2000, method = "PHR")
 
 #### 2-3. Find the minimum sample size required to estimate the general distribution
 
-As described in the main text, an asymptote was considered once the mean
-overlap probability exceeded 95% of the estimated horizontal asymptote.
-The sample size linked to this value was deemed to be the minimum sample
+An asymptote could be considered once the mean overlap probability
+exceeded 95% of the estimated horizontal asymptote (Shimada et al 2021).
+The sample size linked to this value is deemed to be the minimum sample
 size required to represent the general distribution of the group.
 
 ``` r
-a <- asymptote(overlap, upper.degree = 10, estimator = 'glm', family = binomial)
+a <- asymptote(overlap, upper.degree = 5, estimator = 'glm', family = binomial)
 ```
 
 #### 2-4. Plot the estimated overlap probabilities relative to the sample sizes (black points), the 95% confidence intervals (grey lines), and 95% of the estimated asymptote (dashed line).
@@ -248,4 +248,4 @@ Evol* 12(2):288-297 doi:
 
 ## Current version
 
-2.2.1 (2022-05-15)
+2.3.0 (2022-10-11)
