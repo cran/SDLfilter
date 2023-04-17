@@ -1,8 +1,8 @@
-3279817dda4ad721738fb47757e2fb42 *DESCRIPTION
+cdfb188e9b4f8951de47ad0f7dcd0c16 *DESCRIPTION
 bc1d0bac1c04fd5dcbed8a3da2b678a9 *LICENSE
 a95a3c33e5886fe4a1f956b3d592550f *NAMESPACE
-ce35965091bf9b1d833fb7880ed43e0c *NEWS
-666c9a2efbfcb6e7ad1540ff012c87a9 *NEWS.md
+e10d5829bd463fcb2d3d6c5c151c382a *NEWS
+1aad45de8b7898fb96d6090854bd7474 *NEWS.md
 42c72560de400608496538dc5eabf62f *R/Australia.R
 0d52c4b352267d9e05b2675c6b21a4bc *R/SandyStrait.R
 0ddf55f892a5d298ba9617c9fc6b9a5e *R/asymptote.R
@@ -10,9 +10,9 @@ ce35965091bf9b1d833fb7880ed43e0c *NEWS
 33301c0e5ee94cdd90970c8d7acbea36 *R/boot_area.R
 c9b113760377c4e8adefec04d0995adb *R/boot_overlap.R
 a237fac298bc24db0059e6db833e97b2 *R/combn_overlap.R
-84389e3bdbc6885d602f9ac559f520af *R/ddfilter.R
-15da3a6f8a19acf335d599e0365ca3dc *R/ddfilter_loop.R
-21838496f42b198e2559604d686c5fa6 *R/ddfilter_speed.R
+edf3b5a219ff7cdea4ef437429dfcaad *R/ddfilter.R
+9ab4f2ae600062d1492ca8a363f0f7dc *R/ddfilter_loop.R
+2f800a789fc7be779935c7e80024759e *R/ddfilter_speed.R
 4a1622ffea69cb3042cd8d7b592e8809 *R/depthfilter.R
 d2cc35896e169fb4068cbbe5d4d99436 *R/distfilter.R
 666a23dd2ad9af2586e384e4183b0679 *R/dupfilter.R
@@ -35,8 +35,8 @@ d84d5524bae88c58ec0985a2d602bc2a *R/tidalplane.R
 e3a467c06362068aa0fc9cce3264d68b *R/ud_raster.R
 a388fdbc3bd73ddf27ce00a0a1700325 *R/vmax.R
 462f0598e049dddba218a72e2b4011b8 *R/vmaxlp.R
-dbbc30d6d5007f10dd3c5760928679e0 *README.md
-ea124a494ad7922985532ad3b308e4d5 *build/partial.rdb
+6de3f0e9a1e095c6dbca94b5ba4a07ed *README.md
+cdbdb705c017565f8d24cdc91a0e6ec8 *build/partial.rdb
 d412821c58fa200a8300bd7c2cea3c60 *data/Australia.rda
 73f3a7489f8a8dfd627c087115bdc205 *data/SandyStrait.rda
 5b8137395958336e6d476c87bcad8eeb *data/bathymodel.rda
@@ -47,7 +47,7 @@ f6d231283b0797d9695c94443fe58add *data/tidalplane.rda
 59063e33d0723204e854d6b0587fa183 *data/turtle2.rda
 e78658188366aaf4b4a01ccd8d284f32 *data/ud_matrix.rda
 06ece4ba0a0ed519b2496c86db3edb4b *data/ud_raster.rda
-ef7b380047db4b5a3663a1bdfb3bb66c *inst/CITATION
+1cd5e038e846e8c0f6327addf80965f6 *inst/CITATION
 71ef582c789434bc0598932b96a59f58 *man/Australia.Rd
 1a11315df9d9b1d4dcb835c61f4ed45b *man/SandyStrait.Rd
 1c818e167ef012793fb91a51fe961c75 *man/asymptote.Rd
@@ -55,9 +55,9 @@ ef7b380047db4b5a3663a1bdfb3bb66c *inst/CITATION
 f59bf9dfd534e4bd4fc9d6ba22c5a323 *man/boot_area.Rd
 fcd79a00526de5f35ceafbcb656f23be *man/boot_overlap.Rd
 e8e0e365ed17828df023a52448ceeadd *man/combn_overlap.Rd
-56b07a7ef6fdc18697702a8b0f4951b0 *man/ddfilter.Rd
+49f567c2ffeaf098fd547858e82fccb7 *man/ddfilter.Rd
 2fd19f5cabd6b9a98d439087d1667c59 *man/ddfilter_loop.Rd
-ff71282c569a1d844fbe7bc9fdc3832c *man/ddfilter_speed.Rd
+c380590c7c4ffdf92c29f876044edaed *man/ddfilter_speed.Rd
 6a06ce2371cb840cf04951983ac51314 *man/depthfilter.Rd
 78b00d7e676b0177487ed25e78f8746b *man/distfilter.Rd
 1e95c531ab7f1f3bc0e39b206823b3fd *man/dupfilter.Rd
@@ -65,8 +65,8 @@ aa37c6250d3021237b89fbddb2a6ef01 *man/dupfilter_exact.Rd
 d1b763570d66c97a886f5885a85641fa *man/dupfilter_qi.Rd
 9b98d57fc449a1ecf03c2cd173e70e0e *man/dupfilter_space.Rd
 04770303d26be6e4f9521ac5d437687d *man/dupfilter_time.Rd
-df53bd6bf748fbea7e6260afa97953a4 *man/figures/unnamed-chunk-13-1.png
-7153380125e30aca0ab513746c77b10a *man/figures/unnamed-chunk-7-1.png
+1fd380a5dac533a9a6a8805a1eb45042 *man/figures/unnamed-chunk-13-1.png
+16b55f097a6e809c6fb69ea1c380bc64 *man/figures/unnamed-chunk-7-1.png
 d66e8e9b8261fcdcf14fe223e1b54b55 *man/flatback.Rd
 1706bd58babb4fb713ddeca977bf8570 *man/kml_track.Rd
 36357bdd93025ca20ebd6916ca1594b2 *man/map_track.Rd

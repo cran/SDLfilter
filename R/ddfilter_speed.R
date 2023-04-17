@@ -14,9 +14,11 @@
 #' @param vmax A numeric value specifying a threshold of speed from a previous and/or to a subsequent fix. 
 #' Default is 8.9km/h. 
 #' If this value is unknown, it can be estimated from \emph{sdata} using the function \code{\link{vmax}}.
-#' @param method An integer specifying how locations should be filtered with \emph{vmax}. 
-#' A location is removed if the speed from a previous and(1)/or(2) to a subsequent location exceeds \emph{vmax}. 
-#' Default is 1 (both way).
+#' @param method An integer (1 or 2) specifying how locations should be filtered. 
+#' Default is 1 and removes a location if the speed from a previous AND to a subsequent location exceeds \emph{vmax}. 
+#' Select 2 to remove a location if the speed from a previous OR to a subsequent location exceeds \emph{vmax}. 
+#' For the latter, the filter examines successive suspect locations (i.e. the speed from a previous and/or to a subsequent location exceeds \emph{vmax}) 
+#' and retain one location that is associated with the minimum speed from a previous and to a subsequent location.
 #' @importFrom dplyr bind_rows
 #' @export
 #' @details This function removes locations if the speed from a previous and/or to a subsequent location exceeds a given threshold speed. 
@@ -34,10 +36,7 @@
 
 
 
-ddfilter_speed<-function (sdata, vmax=8.9, method=1){
-  
-  ## Original columns
-  # headers <- names(sdata)
+ddfilter_speed <- function (sdata, vmax = 8.9, method = 1){
   
   ## Original sample size
   OriginalSS <- nrow(sdata)
@@ -54,89 +53,89 @@ ddfilter_speed<-function (sdata, vmax=8.9, method=1){
   sdata$DateTime <- with(sdata, as.POSIXct(DateTime, format = "%Y-%m-%d %H:%M:%S", tz = "GMT"))
   
   
-    max.speed<-function(sdata=sdata, vmax=vmax, method=method){
-      
-      #### Exclude data with less than 4 locations
-      ndata<-table(sdata$id)
-      id.exclude<-names(ndata[as.numeric(ndata)<4])
-      excluded.data<-sdata[sdata$id %in% id.exclude,]
-      sdata<-sdata[!(sdata$id %in% id.exclude),]
-      
-      if(nrow(sdata) > 0){
-        #### Organize data
-        ## Sort data in alphabetical and chronological order
-        sdata<-with(sdata, sdata[order(id, DateTime),])
-        row.names(sdata)<-1:nrow(sdata)
-        
-        
-        ## Get Id of each animal
-        IDs<-levels(factor(sdata$id))
-        
-        ## Get movement parameters
-        sdata <- track_param(sdata, param = c('time', 'distance', 'speed'))
-        
-        
-        # Select locations at which the speed from a previous and to a subsequent location exceeds maximum linear traveling speed (Vmax)
-        ## Function to identify location to remove: (0 = remove, 1 = keep)
-        if(method==1){
-          overMax<-function(i)
-            if(sdata$pSpeed[i]>vmax && sdata$sSpeed[i]>vmax && (!is.na(sdata$pSpeed[i])) && (!is.na(sdata$sSpeed[i]))){
-              0
-            } else {
-              1
-            }
-        } else if (method==2) {
-          overMax<-function(i)
-            if((sdata$pSpeed[i]>vmax | sdata$sSpeed[i]>vmax) && (!is.na(sdata$pSpeed[i])) && (!is.na(sdata$sSpeed[i]))){
-              0
-            } else {
-              1
-            }
-        }
-        
-        ## Apply the above function to each data set separately
-        set.rm<-function(j){
-          start<-as.numeric(rownames(sdata[sdata$id %in% j,][2,]))
-          end<-as.numeric(rownames(sdata[sdata$id %in% j,][1,]))+(nrow(sdata[sdata$id %in% j,])-2)
-          rm<-unlist(lapply(start:end, overMax))
-          c(1, rm, 1)
-        }
-        
-        sdata$overMax<-unlist(lapply(IDs, set.rm))
-        
-        sdata<-sdata[sdata$overMax==1,]
-      }
-      
-      
-      #### Bring back excluded data
-      if(nrow(excluded.data)>0){
-        # excluded.data[,c("pTime", "sTime", "pDist", "sDist", "pSpeed", "sSpeed", "overMax")]<-NA
-        sdata <- dplyr::bind_rows(sdata, excluded.data)
-      } else {
-        sdata <- sdata
-      }
-      
-      return(sdata)
-    }
-
+  ## Exclude data with less than 4 locations
+  ndata <- table(sdata$id)
+  id.exclude <- names(ndata[as.numeric(ndata) < 4])
+  excluded.data <- sdata[sdata$id %in% id.exclude,]
+  sdata <- sdata[!(sdata$id %in% id.exclude),]
   
-  # Repeat the above function until no locations can be removed by this filter.
-  sdata2<-max.speed(sdata=sdata, vmax=vmax, method=method)
-  sdata3<-max.speed(sdata=sdata2, vmax=vmax, method=method)
-  while(!(nrow(sdata2) == nrow(sdata3)))
-  {
-    sdata3<-max.speed(sdata=sdata2, vmax=vmax, method=method)
-    sdata2<-max.speed(sdata=sdata3, vmax=vmax, method=method)
+  
+  ## Speed filter
+  if(nrow(sdata) > 0){
+    ## Get movement parameters
+    sdata <- track_param(sdata, param = 'speed')
+    
+    
+    ## speed filter
+    if(method == 1){
+      
+      # Remove locations at which the speed from a previous AND to a subsequent location exceeds maximum linear traveling speed (Vmax)
+      sdata1 <- with(sdata, sdata[is.na(pSpeed) | is.na(sSpeed) | pSpeed <= vmax | sSpeed <= vmax,])
+      
+      while(!(nrow(sdata) == nrow(sdata1)))
+      {
+        sdata1 <- track_param(sdata1, param = 'speed')
+        sdata <- with(sdata1, sdata1[is.na(pSpeed) | is.na(sSpeed) | pSpeed <= vmax | sSpeed <= vmax,])
+      }
+      
+    } else if (method == 2){
+      
+      # Remove locations at which the speed from a previous OR to a subsequent location exceeds maximum linear traveling speed (Vmax)
+      sdata$row <- seq(1, nrow(sdata))
+      sdata1 <- with(sdata, sdata[(!is.na(pSpeed) & pSpeed > vmax) | (!is.na(sSpeed) & sSpeed > vmax), c('pSpeed', 'sSpeed', 'row')])
+      
+      while(nrow(sdata1) > 0){
+        # Select working columns
+        pSpd <- sdata1$pSpeed
+        sSpd <- sdata1$sSpeed
+        rows <- sdata1$row
+        rm(sdata1)
+        
+        # group successive locations to assess
+        index <- 1; g <- rep(1, length(rows))
+        for(i in 2:length(rows)){
+          if(is.na(pSpd[i]) | pSpd[i] != sSpd[i-1] | is.na(sSpd[i-1])){
+            index <- index + 1
+          }
+          g[i] <- index
+        }
+        
+        
+        # Calculate mean speed
+        mean_spd <- rowMeans(cbind(pSpd, sSpd), na.rm = TRUE)
+
+        # Remove/retain locations based on the mean speed from a previous and to a subsequent location
+        row_rm <- rep(0, length(unique(g)))
+        for(i in unique(g)){
+          rows_g <- which(g == i)
+          max_spd <- which.max(mean_spd[rows_g])
+          row_rm[i] <- rows[rows_g[max_spd]]
+        }
+  
+        sdata <- sdata[!sdata$row %in% row_rm,]
+        sdata <- track_param(sdata, param = 'speed')
+        sdata1 <- with(sdata, sdata[(!is.na(pSpeed) & pSpeed > vmax) | (!is.na(sSpeed) & sSpeed > vmax), c('pSpeed', 'sSpeed', 'row')])
+      }
+      sdata$row <- NULL
+    }
   }
   
   
+  ## Bring back excluded data
+  if(nrow(excluded.data) > 0){
+    sdata <- dplyr::bind_rows(sdata, excluded.data)
+  } else {
+    sdata <- sdata
+  }
+  
+    
   #### Report the summary of filtering
   ## Data excluded from filtering
   ndata <- table(as.character(sdata$id))
-  id.exclude <- names(ndata[as.numeric(ndata)<4])
+  id.exclude <- names(ndata[as.numeric(ndata) < 4])
     
   ## Filtered data
-  FilteredSS <- nrow(sdata3)
+  FilteredSS <- nrow(sdata)
   RemovedSamplesN <- OriginalSS - FilteredSS
   
   ## Print report
@@ -146,10 +145,5 @@ ddfilter_speed<-function (sdata, vmax=8.9, method=1){
     message(paste(id.exclude, collapse = ', '))
   }
 
-  
-  # Delete working columns and return the output
-  drop.vars <- c("overMax", "inAng", "meanSpeed", "meanAngle")
-  sdata3 <- sdata3[,!(names(sdata3) %in% drop.vars)] 
-  # sdata3$overMax <- NULL
-  return(sdata3)
+  return(sdata)
 }
